@@ -1,0 +1,20 @@
+{
+  "name": "commandlinedeliveryapplications",
+  "version": "1.0.0",
+  "description": "A simple CLI application that calculates the delivery time and cost of a fictional logistics company.",
+  "main": "deliveryApp.js",
+  "scripts": {
+    "test": "node deliveryApp.js test",
+    "start": "node deliveryApp.js start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KNLim36/CommandLineDeliveryApplications.git"
+  },
+  "author": "Kean Neng",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KNLim36/CommandLineDeliveryApplications/issues"
+  },
+  "homepage": "https://github.com/KNLim36/CommandLineDeliveryApplications#readme"
+}
