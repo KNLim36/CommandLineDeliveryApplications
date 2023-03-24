@@ -83,19 +83,18 @@ const validateInput = (inputName, inputValue, devMode = false) => {
     return parsedValue;
 };
 
-const startProcessing = (args) => {
-    const [baseDeliveryCostInput, packageAmountInput, ...packageDetails] = args;
+const getBaseDeliveryCost = (args) => {
+    const baseDeliveryCostInput = args.shift();
+    return validateInput("base delivery cost", baseDeliveryCostInput);
+};
 
-    const baseDeliveryCost = validateInput(
-        "base delivery cost",
-        baseDeliveryCostInput
-    );
-    if (typeof baseDeliveryCost === "string") return baseDeliveryCost;
+const getPackageAmount = (args) => {
+    const packageAmountInput = args.shift();
+    return validateInput("package amount", packageAmountInput);
+};
 
-    const packageAmount = validateInput("package amount", packageAmountInput);
-    if (typeof packageAmount === "string") return packageAmount;
-
-    const packages = Array.from({ length: packageAmount }, () => {
+const createPackages = (packageAmount, packageDetails) =>
+    Array.from({ length: packageAmount }, () => {
         const pkgId = packageDetails.shift();
         validatePackageId(pkgId, offers);
 
@@ -111,50 +110,35 @@ const startProcessing = (args) => {
         return { pkgId, pkgWeight, pkgDistance, offerCode };
     });
 
+const startProcessing = (args) => {
+    const baseDeliveryCost = getBaseDeliveryCost(args);
+    if (typeof baseDeliveryCost === "string") return baseDeliveryCost;
+
+    const packageAmount = getPackageAmount(args);
+    if (typeof packageAmount === "string") return packageAmount;
+
+    const [...packageDetails] = args;
+    const packages = createPackages(packageAmount, packageDetails);
     const [vehicleAmount, maxSpeed, maxCarryWeight] = packageDetails;
     let currentTime = 0;
-    // let currentVehicleAmount = vehicleAmount;
 
     const plannedShipments = [];
     let packagesCopy = packages.slice(); // To not mutate the original packages
 
     for (let i = 0; i < vehicleAmount; i++) {
-        // Plan a new shipment
-        // const shipment = generateShipment(
-        //     packagesCopy,
-        //     maxCarryWeight,
-        //     maxSpeed
-        // );
-
         const shipment = createOptimalShipment(
-            packages,
+            packagesCopy,
             maxCarryWeight,
             maxSpeed
         );
 
         // Add it into currently planned shipments
         plannedShipments.push(shipment);
-
         const shipmentPackages = shipment.packages;
 
-        // Find the remaining packages
-        packagesCopy = packagesCopy.filter((pkg) => {
-            // Find the index of the current package in the shipment array
-            const index = shipmentPackages.findIndex(
-                (s) => s.pkgId === pkg.pkgId
-            );
-
-            // If the package is not in the shipment array, keep it
-            return index === -1;
-        });
-
-        // console.log({ shipment, remainingPackages, maxCarryWeight });
-
-        // outputColoredText("Deliver shipment", "red");
-        // outputColoredText("Current Time: " + currentTime, "yellow");
-        // outputColoredText("Current Time: " + currentTime, "yellow");
-        // currentVehicleAmount--;
-        // currentVehicleAmount
+        console.log({ i, before: packagesCopy });
+        packagesCopy = filterOutPackages(packagesCopy, shipmentPackages);
+        console.log({ i, after: packagesCopy });
     }
 
     // console.log(
@@ -163,6 +147,15 @@ const startProcessing = (args) => {
 
     const processedPackages = packages.map((pkg) =>
         processIndividualPackage(baseDeliveryCost, pkg, offers)
+    );
+};
+
+const filterOutPackages = (allPackages, packagesToFilter) => {
+    return allPackages.filter(
+        (packageFromA) =>
+            !packagesToFilter.some(
+                (packageFromB) => packageFromA.pkgId === packageFromB.pkgId
+            )
     );
 };
 
@@ -201,8 +194,12 @@ const calculateTotalCost = (deliveryCost, discountAmount) => {
     return costCalculator.calculateTotalCost(deliveryCost, discountAmount);
 };
 
-const createOptimalShipment = (packages, maxWeight, maxSpeed) => {
-    return shipmentService.createOptimalShipment(packages, maxWeight, maxSpeed);
+const createOptimalShipment = (packages, maxCarryWeight, maxSpeed) => {
+    return shipmentService.createOptimalShipment(
+        packages,
+        maxCarryWeight,
+        maxSpeed
+    );
 };
 
 // Process individual package and output ${packageId} ${discount} ${totalCost}

@@ -37,12 +37,12 @@ const sortPackagesByWeightAndDistanceAscending = (packages) => {
     );
 };
 
-const groupPackages = (sortedPackages, maxWeight) => {
+const groupPackages = (sortedPackages, maxCarryWeight) => {
     let currentWeight = 0;
     let currentPackages = [];
 
     for (const pkg of sortedPackages) {
-        if (currentWeight + pkg.pkgWeight <= maxWeight) {
+        if (currentWeight + pkg.pkgWeight <= maxCarryWeight) {
             currentWeight += pkg.pkgWeight;
             currentPackages.push(pkg);
         } else {
@@ -79,16 +79,16 @@ const calculateDriverReturnDuration = (packages, maxSpeed) => {
     return deliveryDuration * 2;
 };
 
-const getPackageCombinations = (packages, maxWeight) => {
+const getPackageCombinations = (packages, maxCarryWeight) => {
     const combinations = [];
 
     for (let i = 0; i < packages.length; i++) {
         const package = packages[i];
-        if (package.pkgWeight > maxWeight) continue;
+        if (package.pkgWeight > maxCarryWeight) continue;
 
         for (let j = i + 1; j < packages.length; j++) {
             const sibling = packages[j];
-            if (sibling.pkgWeight + package.pkgWeight <= maxWeight) {
+            if (sibling.pkgWeight + package.pkgWeight <= maxCarryWeight) {
                 combinations.push([package, sibling]);
             }
         }
@@ -105,14 +105,14 @@ const getOptimalCombination = (combinations) => {
     let optimalCombination = [];
 
     for (let i = 0; i < combinations.length; i++) {
-        const combination = combinations[i];
-        if (combination.length > optimalCombination.length) {
-            optimalCombination = combination;
-        } else if (combination.length === optimalCombination.length) {
-            const combinationTotalWeight = getTotalWeight(combination);
+        const validPackages = combinations[i];
+        if (validPackages.length > optimalCombination.length) {
+            optimalCombination = validPackages;
+        } else if (validPackages.length === optimalCombination.length) {
+            const combinationTotalWeight = getTotalWeight(validPackages);
             const optimalTotalWeight = getTotalWeight(optimalCombination);
             if (combinationTotalWeight > optimalTotalWeight) {
-                optimalCombination = combination;
+                optimalCombination = validPackages;
             }
         }
     }
@@ -124,64 +124,61 @@ const getTotalWeight = (packages) => {
     return packages.reduce((total, p) => total + p.pkgWeight, 0);
 };
 
-const getMax = (arr) => {
-    return arr.reduce(getHighestAmount, arr[0]);
+const findHeaviestShipment = (items) => {
+    return items.reduce(getHighestAmount, items[0]);
 };
 
-const getHighestAmount = (acc, cur) => {
-    if (cur.amount > acc.amount) {
-        return cur;
-    } else if (cur.amount === acc.amount) {
-        return getHighestWeight(acc, cur);
+const getHighestAmount = (highest, current) => {
+    if (current.amount > highest.amount) {
+        return current;
+    } else if (current.amount === highest.amount) {
+        return getHighestWeight(highest, current);
     } else {
-        return acc;
+        return highest;
     }
 };
 
-const getHighestWeight = (a, b) => {
-    return a.totalWeight > b.totalWeight ? a : b;
+const getHighestWeight = (itemA, itemB) => {
+    return itemA.totalWeight > itemB.totalWeight ? itemA : itemB;
 };
 
-const createOptimalShipment = (packages, maxWeight, maxSpeed) => {
-    const packagesCopy = packages.slice();
-    const combinationArray = [];
+const createOptimalShipment = (packages, maxCarryWeight, maxSpeed) => {
+    const shipments = [];
+    
+    for (let i = 0; i < packages.length; i++) {
+        const shipment = [];
+        const package = packages[i];
+        let totalWeight = 0;
 
-    for (let i = 0; i < packagesCopy.length; i++) {
-        const package = packagesCopy[i];
-        let currentWeight = 0;
-        const combination = [];
-
-        if (package.pkgWeight <= maxWeight) {
-            combination.push(package);
-            currentWeight += package.pkgWeight;
+        if (package.pkgWeight <= maxCarryWeight) {
+            shipment.push(package);
+            totalWeight += package.pkgWeight;
         }
 
-        for (let j = 0; j < packagesCopy.length; j++) {
-            if (j <= i) continue;
-            const sibling = packagesCopy[j];
-            if (sibling.pkgWeight + currentWeight <= maxWeight) {
-                combination.push(sibling);
-                currentWeight += sibling.pkgWeight;
+        for (let j = i + 1; j < packages.length; j++) {
+            const sibling = packages[j];
+            if (sibling.pkgWeight + totalWeight <= maxCarryWeight) {
+                shipment.push(sibling);
+                totalWeight += sibling.pkgWeight;
             }
         }
 
-        combinationArray.push({
-            packages: combination,
-            amount: combination.length,
-            totalWeight: currentWeight,
+        shipments.push({
+            packages: shipment,
+            amount: shipment.length,
+            totalWeight,
         });
     }
 
-    const max = getMax(combinationArray);
-
-    const deliveryDuration = getDeliveryDuration(max, maxSpeed);
+    const optimalShipment = findHeaviestShipment(shipments);
+    const deliveryDuration = getDeliveryDuration(optimalShipment, maxSpeed);
     const driverReturnDuration = getDriverReturnDuration(deliveryDuration);
 
     return {
         deliveryDuration,
         driverReturnDuration,
-        packages: max.packages,
-        totalWeight: max.totalWeight,
+        packages: optimalShipment.packages,
+        totalWeight: optimalShipment.totalWeight,
     };
 };
 
@@ -210,7 +207,6 @@ const truncateDecimalToTwoPlaces = (num) => {
 };
 
 const shipmentService = {
-    sortPackagesByWeightDescending,
     createOptimalShipment,
 };
 
