@@ -8,7 +8,7 @@ const costCalculator = {
     calculateDiscountAmount(cost, discountPercentage) {
         cost = parseInt(cost);
         discountPercentage = parseFloat(discountPercentage);
-        return cost * discountPercentage;
+        return Math.round(cost * discountPercentage);
     },
     calculateTotalCost(deliveryCost, discountAmount) {
         return deliveryCost - discountAmount;
