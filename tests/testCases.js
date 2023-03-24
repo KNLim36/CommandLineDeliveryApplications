@@ -20,45 +20,45 @@ module.exports = [
         func: "validatePackageId",
     },
     {
-        name: "Valid base delivery cost input(number)",
+        name: "Valid base delivery cost input (number)",
         input: { arg1: "base delivery cost", arg2: 300, arg3: true },
         expectedOutput: 300,
         func: "validateInput",
     },
     {
-        name: "Valid base delivery cost input(negative number)",
+        name: "Valid base delivery cost input (negative number)",
         input: { arg1: "base delivery cost", arg2: -1, arg3: true },
         expectedOutput: -1,
         func: "validateInput",
     },
     {
-        name: "Valid base delivery cost input(zero)",
+        name: "Valid base delivery cost input (zero)",
         input: { arg1: "base delivery cost", arg2: 0, arg3: true },
         expectedOutput: 0,
         func: "validateInput",
     },
     {
-        name: "Valid base delivery cost input(number with string type)",
+        name: "Valid base delivery cost input (number with string type)",
         input: { arg1: "base delivery cost", arg2: "100", arg3: true },
         expectedOutput: 100,
         func: "validateInput",
     },
     {
-        name: "Valid base delivery cost input(string)",
+        name: "Valid base delivery cost input (string)",
         input: { arg1: "base delivery cost", arg2: "hello", arg3: true },
         expectedOutput:
             "The provided value for the base delivery cost is invalid. The received value is hello, which is not a valid number.",
         func: "validateInput",
     },
     {
-        name: "Valid base delivery cost input(null)",
+        name: "Valid base delivery cost input (null)",
         input: { arg1: "base delivery cost", arg2: null, arg3: true },
         expectedOutput:
             "The provided value for the base delivery cost is invalid. The received value is null, which is not a valid number.",
         func: "validateInput",
     },
     {
-        name: "Valid base delivery cost input(undefined)",
+        name: "Valid base delivery cost input (undefined)",
         input: { arg1: "base delivery cost", arg2: undefined, arg3: true },
         expectedOutput:
             "The provided value for the base delivery cost is invalid. The received value is undefined, which is not a valid number.",
