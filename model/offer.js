@@ -88,6 +88,7 @@ const getEligibleOfferCode = (offerCodes) => {
 const offerService = {
     getDiscountPercentage,
     getEligibleOfferCode,
+    isValidOfferCode,
 };
 
 module.exports = {

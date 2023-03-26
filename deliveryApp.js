@@ -16,10 +16,8 @@ const runTestCases = () => {
 const executeTests = () => {
     const testCaseResults = [];
 
-    for (const [
-        ,
-        { name, input, expectedOutput, func },
-    ] of TestCases.entries()) {
+    for (const [index, testCase] of TestCases.entries()) {
+        const { name, input, expectedOutput, func } = testCase;
         try {
             const result = global[func](...Object.values(input));
             const assertionFunc =
@@ -28,10 +26,7 @@ const executeTests = () => {
                     ? assert.deepStrictEqual
                     : assert.strictEqual;
             assertionFunc(result, expectedOutput);
-            testCaseResults.push({
-                result: resultEnum.success,
-                name,
-            });
+            testCaseResults.push({ result: resultEnum.success, name });
         } catch (error) {
             testCaseResults.push({
                 result: resultEnum.failure,
@@ -312,6 +307,14 @@ const getTotalCost = (deliveryCost, discountAmount) => {
     return costCalculator.calculateTotalCost(deliveryCost, discountAmount);
 };
 
+global.isNumber = inputValidator.isNumber;
+global.validateNumericInput = inputValidator.validateNumericInput;
+global.calculateDeliveryCost = costCalculator.calculateDeliveryCost;
+global.calculateTotalCost = costCalculator.calculateTotalCost;
+global.isValidOfferCode = offerService.isValidOfferCode;
+global.processIndividualPackage = processIndividualPackage;
+global.calculateDiscountAmount = costCalculator.calculateDiscountAmount;
+global.createOptimalShipment = shipmentService.createOptimalShipment;
 try {
     // Since the first 2 arguments process.execPath and file path
     const arguments = process.argv.slice(2);

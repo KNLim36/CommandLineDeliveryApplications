@@ -12,7 +12,7 @@ const validateNumericInput = (inputName, inputValue, devMode = false) => {
     if (!isNumber(parsedValue)) {
         const errorMessage = `The provided value for the ${inputName} is invalid. The received value is ${inputValue}, which is not a valid number.`;
         consolePrinter.print(errorMessage, "red", devMode);
-        throw new Error(errorMessage);
+        return errorMessage;
     }
     return parsedValue;
 };

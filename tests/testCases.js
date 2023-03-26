@@ -1,5 +1,7 @@
-const { Offer, offers } = require("../model/offer");
-module.exports = [
+const { offers } = require("../model/offer");
+const { Package } = require("../model/package");
+
+const TestCases = [
     {
         name: "Valid input number for isNumber function",
         input: { arg1: 700 },
@@ -13,75 +15,68 @@ module.exports = [
         func: "isNumber",
     },
     {
-        name: "Invalid package id input (double offer code submission)",
-        input: { arg1: "OFR001", arg2: offers, arg3: true },
-        expectedOutput:
-            "The previous package has a leftover offer code 'OFR001'. Please submit only 1 offer code for a package.",
-        func: "validatePackageId",
-    },
-    {
         name: "Valid base delivery cost input (number)",
         input: { arg1: "base delivery cost", arg2: 300, arg3: true },
         expectedOutput: 300,
-        func: "validateInput",
+        func: "validateNumericInput",
     },
     {
         name: "Valid base delivery cost input (negative number)",
         input: { arg1: "base delivery cost", arg2: -1, arg3: true },
         expectedOutput: -1,
-        func: "validateInput",
+        func: "validateNumericInput",
     },
     {
         name: "Valid base delivery cost input (zero)",
         input: { arg1: "base delivery cost", arg2: 0, arg3: true },
         expectedOutput: 0,
-        func: "validateInput",
+        func: "validateNumericInput",
     },
     {
         name: "Valid base delivery cost input (number with string type)",
         input: { arg1: "base delivery cost", arg2: "100", arg3: true },
         expectedOutput: 100,
-        func: "validateInput",
+        func: "validateNumericInput",
     },
     {
         name: "Valid base delivery cost input (string)",
         input: { arg1: "base delivery cost", arg2: "hello", arg3: true },
         expectedOutput:
             "The provided value for the base delivery cost is invalid. The received value is hello, which is not a valid number.",
-        func: "validateInput",
+        func: "validateNumericInput",
     },
     {
         name: "Valid base delivery cost input (null)",
         input: { arg1: "base delivery cost", arg2: null, arg3: true },
         expectedOutput:
             "The provided value for the base delivery cost is invalid. The received value is null, which is not a valid number.",
-        func: "validateInput",
+        func: "validateNumericInput",
     },
     {
         name: "Valid base delivery cost input (undefined)",
         input: { arg1: "base delivery cost", arg2: undefined, arg3: true },
         expectedOutput:
             "The provided value for the base delivery cost is invalid. The received value is undefined, which is not a valid number.",
-        func: "validateInput",
+        func: "validateNumericInput",
     },
     {
         name: "Valid package weight input (number)",
         input: { arg1: "package weight", arg2: 700, arg3: true },
         expectedOutput: 700,
-        func: "validateInput",
+        func: "validateNumericInput",
     },
     {
         name: "Valid package weight input (number with string type)",
         input: { arg1: "package weight", arg2: "700", arg3: true },
         expectedOutput: 700,
-        func: "validateInput",
+        func: "validateNumericInput",
     },
     {
         name: "Valid package weight input (string)",
         input: { arg1: "package weight", arg2: "hi", arg3: true },
         expectedOutput:
             "The provided value for the package weight is invalid. The received value is hi, which is not a valid number.",
-        func: "validateInput",
+        func: "validateNumericInput",
     },
     {
         name: "Valid delivery cost calculation Sample - 1",
@@ -123,28 +118,19 @@ module.exports = [
         name: "Validate Offer Code with Valid Inputs",
         input: { arg1: "OFR003", arg2: offers },
         expectedOutput: true,
-        func: "validateOfferCode",
+        func: "isValidOfferCode",
     },
     {
         name: "Process individual package with offer Sample - 1",
         input: {
-            arg1: 100,
-            arg2: {
-                pkgId: "PKG1",
-                pkgWeight: 5,
-                pkgDistance: 5,
+            arg1: {
+                id: "PKG1",
+                weight: 5,
+                distance: 5,
                 offerCode: "OFR001",
             },
-            arg3: [
-                Offer(
-                    "OFR001",
-                    { min: 70, max: 200 },
-                    { min: 0, max: 200 },
-                    10,
-                    true,
-                    false
-                ),
-            ],
+            arg2: offers,
+            arg3: 100,
             arg4: true,
         },
         expectedOutput: "PKG1 0 175",
@@ -153,23 +139,14 @@ module.exports = [
     {
         name: "Process individual package with offer Sample - 2",
         input: {
-            arg1: 100,
-            arg2: {
-                pkgId: "PKG2",
-                pkgWeight: 15,
-                pkgDistance: 5,
+            arg1: {
+                id: "PKG2",
+                weight: 15,
+                distance: 5,
                 offerCode: "OFR002",
             },
-            arg3: [
-                Offer(
-                    "OFR002",
-                    { min: 100, max: 250 },
-                    { min: 50, max: 150 },
-                    7,
-                    true,
-                    true
-                ),
-            ],
+            arg2: offers,
+            arg3: 100,
             arg4: true,
         },
         expectedOutput: "PKG2 0 275",
@@ -178,48 +155,30 @@ module.exports = [
     {
         name: "Process individual package with offer Sample - 3",
         input: {
-            arg1: 100,
-            arg2: {
-                pkgId: "PKG3",
-                pkgWeight: 10,
-                pkgDistance: 100,
+            arg1: {
+                id: "PKG3",
+                weight: 10,
+                distance: 100,
                 offerCode: "OFR003",
             },
-            arg3: [
-                Offer(
-                    "OFR003",
-                    { min: 10, max: 150 },
-                    { min: 50, max: 250 },
-                    5,
-                    true,
-                    true
-                ),
-            ],
+            arg2: offers,
+            arg3: 100,
             arg4: true,
         },
         expectedOutput: "PKG3 35 665",
         func: "processIndividualPackage",
     },
     {
-        name: "Process individual package with offer Sample - 3",
+        name: "Process individual package with offer Sample - 4",
         input: {
-            arg1: 100,
-            arg2: {
-                pkgId: "PKG4",
-                pkgWeight: 110,
-                pkgDistance: 60,
+            arg1: {
+                id: "PKG4",
+                weight: 110,
+                distance: 60,
                 offerCode: "OFR002",
             },
-            arg3: [
-                Offer(
-                    "OFR002",
-                    { min: 100, max: 250 },
-                    { min: 50, max: 150 },
-                    7,
-                    true,
-                    true
-                ),
-            ],
+            arg2: offers,
+            arg3: 100,
             arg4: true,
         },
         expectedOutput: "PKG4 105 1395",
@@ -271,37 +230,35 @@ module.exports = [
         name: "Generate Shipment - Light then Heavy Packages",
         input: {
             arg1: [
-                {
-                    pkgId: "LightPackage",
-                    pkgWeight: 20,
-                    pkgDistance: 100,
-                    offerCode: "NA",
-                },
-                {
-                    pkgId: "HeavyPackage",
-                    pkgWeight: 200,
-                    pkgDistance: 10,
-                    offerCode: "NA",
-                },
+                Package("LightPackage", 20, 100, "NA"),
+                Package("HeavyPackage", 200, 10, "NA"),
             ],
             arg2: 220,
             arg3: 70,
+            arg4: 0,
         },
         expectedOutput: {
             deliveryDuration: 1.42,
+            driverAvailableTime: 2.84,
             driverReturnDuration: 2.84,
             packages: [
                 {
-                    pkgId: "LightPackage",
-                    pkgWeight: 20,
-                    pkgDistance: 100,
+                    arrivalTime: 1.42,
+                    deliveryDuration: 1.42,
+                    departureTime: 0,
+                    distance: 100,
+                    id: "LightPackage",
                     offerCode: "NA",
+                    weight: 20,
                 },
                 {
-                    pkgId: "HeavyPackage",
-                    pkgWeight: 200,
-                    pkgDistance: 10,
+                    arrivalTime: 0.14,
+                    deliveryDuration: 0.14,
+                    departureTime: 0,
+                    distance: 10,
+                    id: "HeavyPackage",
                     offerCode: "NA",
+                    weight: 200,
                 },
             ],
             totalWeight: 220,
@@ -312,37 +269,35 @@ module.exports = [
         name: "Generate Shipment - Same Weight, Different Distance Packages",
         input: {
             arg1: [
-                {
-                    pkgId: "Closer package",
-                    pkgWeight: 50,
-                    pkgDistance: 10,
-                    offerCode: "NA",
-                },
-                {
-                    pkgId: "Further package",
-                    pkgWeight: 50.0,
-                    pkgDistance: 100,
-                    offerCode: "NA",
-                },
+                Package("Closer package", 50, 10, "NA"),
+                Package("Further package", 50.0, 100, "NA"),
             ],
             arg2: 200,
             arg3: 70,
+            arg4: 0,
         },
         expectedOutput: {
             deliveryDuration: 1.42,
+            driverAvailableTime: 2.84,
             driverReturnDuration: 2.84,
             packages: [
                 {
-                    pkgId: "Closer package",
-                    pkgWeight: 50,
-                    pkgDistance: 10,
+                    arrivalTime: 0.14,
+                    deliveryDuration: 0.14,
+                    departureTime: 0,
+                    distance: 10,
+                    id: "Closer package",
                     offerCode: "NA",
+                    weight: 50,
                 },
                 {
-                    pkgId: "Further package",
-                    pkgWeight: 50.0,
-                    pkgDistance: 100,
+                    arrivalTime: 1.42,
+                    deliveryDuration: 1.42,
+                    departureTime: 0,
+                    distance: 100,
+                    id: "Further package",
                     offerCode: "NA",
+                    weight: 50.0,
                 },
             ],
             totalWeight: 100,
@@ -353,55 +308,47 @@ module.exports = [
         name: "Generate Shipment - 125kg max weight",
         input: {
             arg1: [
-                {
-                    pkgId: "Small far package",
-                    pkgWeight: 10.0,
-                    pkgDistance: 100,
-                    offerCode: "NA",
-                },
-                {
-                    pkgId: "Small close package",
-                    pkgWeight: 10,
-                    pkgDistance: 10,
-                    offerCode: "NA",
-                },
-                {
-                    pkgId: "Medium close package",
-                    pkgWeight: 100,
-                    pkgDistance: 10,
-                    offerCode: "NA",
-                },
-                {
-                    pkgId: "Largest far package",
-                    pkgWeight: 124,
-                    pkgDistance: 100,
-                    offerCode: "NA",
-                },
+                Package("Small far package", 10.0, 100, "NA"),
+
+                Package("Small close package", 10, 10, "NA"),
+                Package("Medium close package", 100, 10, "NA"),
+                Package("Largest far package", 124, 100, "NA"),
             ],
             arg2: 125,
             arg3: 70,
+            arg4: 0,
         },
         expectedOutput: {
             deliveryDuration: 1.42,
+            driverAvailableTime: 2.84,
             driverReturnDuration: 2.84,
             packages: [
                 {
-                    pkgId: "Small far package",
-                    pkgWeight: 10.0,
-                    pkgDistance: 100,
+                    arrivalTime: 1.42,
+                    deliveryDuration: 1.42,
+                    departureTime: 0,
+                    distance: 100,
+                    id: "Small far package",
                     offerCode: "NA",
+                    weight: 10.0,
                 },
                 {
-                    pkgId: "Small close package",
-                    pkgWeight: 10,
-                    pkgDistance: 10,
+                    arrivalTime: 0.14,
+                    deliveryDuration: 0.14,
+                    departureTime: 0,
+                    distance: 10,
+                    id: "Small close package",
                     offerCode: "NA",
+                    weight: 10,
                 },
                 {
-                    pkgId: "Medium close package",
-                    pkgWeight: 100,
-                    pkgDistance: 10,
+                    arrivalTime: 0.14,
+                    deliveryDuration: 0.14,
+                    departureTime: 0,
+                    distance: 10,
+                    id: "Medium close package",
                     offerCode: "NA",
+                    weight: 100,
                 },
             ],
             totalWeight: 120,
@@ -412,73 +359,57 @@ module.exports = [
         name: "Generate Shipment - Choose 4 out of 6 packages",
         input: {
             arg1: [
-                {
-                    pkgId: "Small close",
-                    pkgWeight: 10,
-                    pkgDistance: 10,
-                    offerCode: "NA",
-                },
-                {
-                    pkgId: "Small medium",
-                    pkgWeight: 10,
-                    pkgDistance: 50,
-                    offerCode: "NA",
-                },
-                {
-                    pkgId: "Small far",
-                    pkgWeight: 10.0,
-                    pkgDistance: 100,
-                    offerCode: "NA",
-                },
-                {
-                    pkgId: "Small super far",
-                    pkgWeight: 10.0,
-                    pkgDistance: 300,
-                    offerCode: "NA",
-                },
-                {
-                    pkgId: "Medium close",
-                    pkgWeight: 100,
-                    pkgDistance: 10,
-                    offerCode: "NA",
-                },
-                {
-                    pkgId: "Largest far",
-                    pkgWeight: 124,
-                    pkgDistance: 100,
-                    offerCode: "NA",
-                },
+                Package("Small close", 10, 10, "NA"),
+                Package("Small medium", 10, 50, "NA"),
+                Package("Small far", 10.0, 100, "NA"),
+                Package("Small super far", 10.0, 300, "NA"),
+                Package("Medium close", 100, 10, "NA"),
+                Package("Largest far", 124, 100, "NA"),
             ],
             arg2: 125,
             arg3: 70,
+            arg4: 0,
         },
         expectedOutput: {
             deliveryDuration: 4.28,
+            driverAvailableTime: 8.56,
             driverReturnDuration: 8.56,
             packages: [
                 {
-                    pkgId: "Small close",
-                    pkgWeight: 10,
-                    pkgDistance: 10,
+                    arrivalTime: 0.14,
+                    deliveryDuration: 0.14,
+                    departureTime: 0,
+                    distance: 10,
+                    id: "Small close",
                     offerCode: "NA",
+                    weight: 10,
                 },
                 {
-                    pkgId: "Small medium",
-                    pkgWeight: 10,
-                    pkgDistance: 50,
+                    arrivalTime: 0.71,
+                    deliveryDuration: 0.71,
+                    departureTime: 0,
+                    distance: 50,
+                    id: "Small medium",
                     offerCode: "NA",
+                    weight: 10,
                 },
                 {
-                    pkgId: "Small far",
-                    pkgWeight: 10.0,
-                    pkgDistance: 100,
+                    arrivalTime: 1.42,
+                    deliveryDuration: 1.42,
+                    departureTime: 0,
+                    distance: 100,
+                    id: "Small far",
                     offerCode: "NA",
+                    weight: 10.0,
                 },
                 {
-                    pkgId: "Small super far",
-                    pkgWeight: 10.0,
-                    pkgDistance: 300,
+                    arrivalTime: 4.28,
+                    deliveryDuration: 4.28,
+                    departureTime: 0,
+                    distance: 300,
+                    id: "Small super far",
                     offerCode: "NA",
+                    weight: 10.0,
                 },
             ],
             totalWeight: 40,
@@ -489,55 +420,38 @@ module.exports = [
         name: "Generate Shipment - Challenge provided example",
         input: {
             arg1: [
-                {
-                    pkgId: "PKG1",
-                    pkgWeight: 50,
-                    pkgDistance: 30,
-                    offerCode: "OFR001",
-                },
-                {
-                    pkgId: "PKG2",
-                    pkgWeight: 75,
-                    pkgDistance: 125,
-                    offerCode: "OFR008",
-                },
-                {
-                    pkgId: "PKG3",
-                    pkgWeight: 175,
-                    pkgDistance: 100,
-                    offerCode: "OFR003",
-                },
-                {
-                    pkgId: "PKG4",
-                    pkgWeight: 110,
-                    pkgDistance: 60,
-                    offerCode: "OFR002",
-                },
-                {
-                    pkgId: "PKG5",
-                    pkgWeight: 155,
-                    pkgDistance: 95,
-                    offerCode: "NA",
-                },
+                Package("PKG1", 50, 30, "OFR001"),
+                Package("PKG2", 75, 125, "OFR008"),
+                Package("PKG3", 175, 100, "OFR003"),
+                Package("PKG4", 110, 60, "OFR002"),
+                Package("PKG5", 155, 95, "NA"),
             ],
             arg2: 200,
             arg3: 70,
+            arg4: 10,
         },
         expectedOutput: {
             deliveryDuration: 1.78,
+            driverAvailableTime: 13.56,
             driverReturnDuration: 3.56,
             packages: [
                 {
-                    pkgId: "PKG2",
-                    pkgWeight: 75,
-                    pkgDistance: 125,
+                    arrivalTime: 11.78,
+                    deliveryDuration: 1.78,
+                    departureTime: 10,
+                    distance: 125,
+                    id: "PKG2",
                     offerCode: "OFR008",
+                    weight: 75,
                 },
                 {
-                    pkgId: "PKG4",
-                    pkgWeight: 110,
-                    pkgDistance: 60,
+                    arrivalTime: 10.85,
+                    deliveryDuration: 0.85,
+                    departureTime: 10,
+                    distance: 60,
+                    id: "PKG4",
                     offerCode: "OFR002",
+                    weight: 110,
                 },
             ],
             totalWeight: 185,
@@ -545,3 +459,13 @@ module.exports = [
         func: "createOptimalShipment",
     },
 ];
+
+const resultEnum = {
+    success: "passed",
+    failure: "failed",
+};
+
+module.exports = {
+    TestCases,
+    resultEnum,
+};
