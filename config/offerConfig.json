@@ -1,0 +1,28 @@
+{
+    "offers": [
+        {
+            "code": "OFR001",
+            "weightRange": { "min": 70, "max": 200 },
+            "distanceRange": { "min": 0, "max": 200 },
+            "discount": 10,
+            "maxWeightInclusive": true,
+            "maxDistanceInclusive": false
+        },
+        {
+            "code": "OFR002",
+            "weightRange": { "min": 100, "max": 250 },
+            "distanceRange": { "min": 50, "max": 150 },
+            "discount": 7,
+            "maxWeightInclusive": true,
+            "maxDistanceInclusive": true
+        },
+        {
+            "code": "OFR003",
+            "weightRange": { "min": 10, "max": 150 },
+            "distanceRange": { "min": 50, "max": 250 },
+            "discount": 5,
+            "maxWeightInclusive": true,
+            "maxDistanceInclusive": true
+        }
+    ]
+}

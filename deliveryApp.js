@@ -1,188 +1,290 @@
-const util = require("util");
 const assert = require("assert");
-const Tests = require("./tests/testCases");
+const { TestCases, resultEnum } = require("./tests/testCases");
 const { offerService, offers } = require("./model/offer");
 const { costCalculator } = require("./utils/costCalculator");
 const { shipmentService } = require("./model/shipment");
+const { packageService } = require("./model/package");
+const { inputValidator } = require("./utils/inputValidator");
+const { consolePrinter, colorEnum } = require("./utils/consolePrinter");
 
-//#region Functions
+//#region Tests
 const runTestCases = () => {
-    // Import test cases from another script to optimize the script size
-    const testAmount = Tests.length;
-    const testResults = [];
+    const testCaseResults = executeTests();
+    reportTestResults(testCaseResults);
+};
 
-    // Loop through the tests array and execute each test
+const executeTests = () => {
+    const testCaseResults = [];
+
     for (const [
-        index,
+        ,
         { name, input, expectedOutput, func },
-    ] of Tests.entries()) {
+    ] of TestCases.entries()) {
         try {
             const result = global[func](...Object.values(input));
-            // If expected result is an array, use deepStrictEqual instead
             const assertionFunc =
                 Array.isArray(expectedOutput) ||
                 typeof expectedOutput === "object"
                     ? assert.deepStrictEqual
                     : assert.strictEqual;
             assertionFunc(result, expectedOutput);
-            testResults.push({ result: "passed", name });
+            testCaseResults.push({
+                result: resultEnum.success,
+                name,
+            });
         } catch (error) {
-            testResults.push({
-                result: "failed",
+            testCaseResults.push({
+                result: resultEnum.failure,
                 name,
                 message: error.message,
             });
         }
     }
 
-    const passedTests = testResults.filter((test) => test.result === "passed");
+    return testCaseResults;
+};
 
-    for (const [index, { result, name, message }] of testResults.entries()) {
-        const color = result === "passed" ? "green" : "yellow";
+const reportTestResults = (testCaseResults) => {
+    const passedTests = testCaseResults.filter(
+        (test) => test.result === resultEnum.success
+    );
+
+    for (const [
+        index,
+        { result, name, message },
+    ] of testCaseResults.entries()) {
+        const color =
+            result === resultEnum.success ? colorEnum.green : colorEnum.yellow;
         const text = `Test ${index + 1}: ${name} ${result}!${
             message ? `: ${message}` : ""
         }`;
-        outputColoredText(text, color);
+        consolePrinter.outputColoredText(text, color);
     }
 
-    const color = passedTests.length === testAmount ? "magenta" : "red";
+    const color =
+        passedTests.length === testCaseResults.length
+            ? colorEnum.magenta
+            : colorEnum.red;
     const summaryText =
-        passedTests.length === testAmount
-            ? `All ${testAmount} tests have passed successfully! 👍`
-            : `Out of ${testAmount} tests, only ${passedTests.length} passed! 🤔`;
-    outputColoredText(summaryText, color);
+        passedTests.length === testCaseResults.length
+            ? `All ${testCaseResults.length} tests have passed successfully! 👍`
+            : `Out of ${testCaseResults.length} tests, only ${passedTests.length} passed! 🤔`;
+    consolePrinter.outputColoredText(summaryText, color);
 };
+//#endregion
 
-const outputColoredText = (text, color) => {
-    const colors = {
-        green: "\x1b[32m%s\x1b[0m",
-        yellow: "\x1b[33m%s\x1b[0m",
-        red: "\x1b[31m%s\x1b[0m",
-        magenta: "\x1b[35m%s\x1b[0m",
-    };
-    const colorCode = colors[color] || colors.green; // default to green if color not provided
-    console.log(colorCode, text);
-};
+const processDelivery = (arguments) => {
+    const { packageAmount, packageDetails, baseDeliveryCost } =
+        getDeliveryDetails(arguments);
 
-const validatePackageId = (packageIdInput, offers, devMode = false) => {
-    // Check if the package ID is a valid offer code
-    if (validateOfferCode(packageIdInput, offers)) {
-        const errorMessage = `The previous package has a leftover offer code '${packageIdInput}'. Please submit only 1 offer code for a package.`;
-        if (!devMode) outputColoredText(errorMessage, "red");
-        return errorMessage;
-    }
-};
+    const packages = packageService.generatePackages(
+        packageAmount,
+        packageDetails
+    );
 
-const validateInput = (inputName, inputValue, devMode = false) => {
-    const parsedValue = parseFloat(inputValue);
-    if (!isNumber(parsedValue)) {
-        const errorMessage = `The provided value for the ${inputName} is invalid. The received value is ${inputValue}, which is not a valid number.`;
-        if (!devMode) outputColoredText(errorMessage, "red");
-        return errorMessage;
-    }
-    return parsedValue;
-};
+    const { vehicleAmount, maxSpeed, maxCarryWeight } =
+        getRemainingInput(packageDetails);
 
-const getBaseDeliveryCost = (args) => {
-    const baseDeliveryCostInput = args.shift();
-    return validateInput("base delivery cost", baseDeliveryCostInput);
-};
+    // If user did not input vehicle amount, max speed and carry weight
+    // We only calculate discount amount and cost
+    const shouldDeliverPackage =
+        typeof vehicleAmount !== "undefined" &&
+        typeof maxSpeed !== "undefined" &&
+        typeof maxCarryWeight !== "undefined";
 
-const getPackageAmount = (args) => {
-    const packageAmountInput = args.shift();
-    return validateInput("package amount", packageAmountInput);
-};
+    if (shouldDeliverPackage) {
+        let currentVehicleAmount = vehicleAmount;
 
-const createPackages = (packageAmount, packageDetails) =>
-    Array.from({ length: packageAmount }, () => {
-        const pkgId = packageDetails.shift();
-        validatePackageId(pkgId, offers);
-
-        const pkgWeightInput = packageDetails.shift();
-        const pkgWeight = validateInput("package weight", pkgWeightInput);
-        if (typeof pkgWeight === "string") return pkgWeight;
-
-        const pkgDistanceInput = packageDetails.shift();
-        const pkgDistance = validateInput("package distance", pkgDistanceInput);
-        if (typeof pkgDistance === "string") return pkgDistance;
-
-        const offerCode = packageDetails.shift();
-        return { pkgId, pkgWeight, pkgDistance, offerCode };
-    });
-
-const startProcessing = (args) => {
-    const baseDeliveryCost = getBaseDeliveryCost(args);
-    if (typeof baseDeliveryCost === "string") return baseDeliveryCost;
-
-    const packageAmount = getPackageAmount(args);
-    if (typeof packageAmount === "string") return packageAmount;
-
-    const [...packageDetails] = args;
-    const packages = createPackages(packageAmount, packageDetails);
-    const [vehicleAmount, maxSpeed, maxCarryWeight] = packageDetails;
-    let currentTime = 0;
-
-    const plannedShipments = [];
-    let packagesCopy = packages.slice(); // To not mutate the original packages
-
-    for (let i = 0; i < vehicleAmount; i++) {
-        const shipment = createOptimalShipment(
-            packagesCopy,
+        let deliveredPackages = deliverPackages(
+            packages,
             maxCarryWeight,
-            maxSpeed
+            maxSpeed,
+            currentVehicleAmount
         );
 
-        // Add it into currently planned shipments
-        plannedShipments.push(shipment);
-        const shipmentPackages = shipment.packages;
+        processDeliveredPackages(
+            packages,
+            deliveredPackages,
+            offers,
+            baseDeliveryCost
+        );
+    } else {
+        processUndeliveredPackages(packages, offers, baseDeliveryCost);
+    }
+};
 
-        console.log({ i, before: packagesCopy });
-        packagesCopy = filterOutPackages(packagesCopy, shipmentPackages);
-        console.log({ i, after: packagesCopy });
+const getRemainingInput = (arguments) => {
+    const [vehicleAmount, maxSpeed, maxCarryWeight] = arguments;
+    if (vehicleAmount && maxSpeed && maxCarryWeight) {
+        const [validVehicleAmount, validMaxSpeed, validMaxCarryWeight] =
+            inputValidator.validateArguments(
+                ["Vehicle amount", "Max speed", "Max carry weight"],
+                [vehicleAmount, maxSpeed, maxCarryWeight]
+            );
+        return {
+            vehicleAmount: validVehicleAmount,
+            maxSpeed: validMaxSpeed,
+            maxCarryWeight: validMaxCarryWeight,
+        };
+    }
+    return {
+        vehicleAmount: undefined,
+        maxSpeed: undefined,
+        maxCarryWeight: undefined,
+    };
+};
+
+const separateInputArguments = (arguments) => {
+    const [baseDeliveryCostInput, packageAmountInput, ...packageDetails] =
+        arguments;
+    return { baseDeliveryCostInput, packageAmountInput, packageDetails };
+};
+
+const validateDeliveryDetails = (validateLabels, inputs) => {
+    return inputValidator.validateArguments(validateLabels, inputs);
+};
+
+const getDeliveryDetails = (arguments) => {
+    const { baseDeliveryCostInput, packageAmountInput, packageDetails } =
+        separateInputArguments(arguments);
+
+    const [baseDeliveryCost, packageAmount] = validateDeliveryDetails(
+        ["base delivery cost", "package amount"],
+        [baseDeliveryCostInput, packageAmountInput]
+    );
+
+    return { packageAmount, baseDeliveryCost, packageDetails };
+};
+
+const processIndividualPackage = (
+    { id, weight, distance, offerCode, arrivalTime },
+    offers,
+    baseDeliveryCost,
+    skipTime = false
+) => {
+    const deliveryCost = getDeliveryCost(baseDeliveryCost, weight, distance);
+    const discountPercentage = getDiscountPercentage(
+        weight,
+        distance,
+        offerCode,
+        offers
+    );
+    const discountAmount = getDiscountAmount(deliveryCost, discountPercentage);
+    const totalCost = getTotalCost(deliveryCost, discountAmount);
+    return constructProcessedMessage(
+        { id, arrivalTime },
+        discountAmount,
+        totalCost,
+        skipTime
+    );
+};
+
+const deliverPackages = (
+    packages,
+    maxCarryWeight,
+    maxSpeed,
+    currentVehicleAmount
+) => {
+    let undeliveredPackages = [...packages];
+    let deliveredPackages = [];
+    let progressingShipments = [];
+    let currentTime = 0;
+
+    while (undeliveredPackages.length || progressingShipments.length) {
+        if (undeliveredPackages.length && currentVehicleAmount) {
+            const shipment = shipmentService.createOptimalShipment(
+                undeliveredPackages,
+                maxCarryWeight,
+                maxSpeed,
+                currentTime
+            );
+            undeliveredPackages = packageService.filterOutPackages(
+                undeliveredPackages,
+                shipment.packages
+            );
+            progressingShipments.push(shipment);
+            currentVehicleAmount--;
+        } else {
+            const minReturnTime =
+                shipmentService.calculateMinReturnTime(progressingShipments);
+            const quickestShipments = shipmentService.getQuickestShipments(
+                progressingShipments,
+                minReturnTime
+            );
+            for (const shipment of quickestShipments) {
+                deliveredPackages.push(...shipment.packages);
+            }
+            currentVehicleAmount +=
+                shipmentService.calculateReturningVehicleAmount(
+                    progressingShipments,
+                    minReturnTime
+                );
+            currentTime = minReturnTime;
+            progressingShipments = progressingShipments.filter(
+                (shipment) => !quickestShipments.includes(shipment)
+            );
+        }
     }
 
-    // console.log(
-    //     util.inspect(plannedShipments, { showHidden: false, depth: null })
-    // );
+    return deliveredPackages;
+};
 
-    const processedPackages = packages.map((pkg) =>
-        processIndividualPackage(baseDeliveryCost, pkg, offers)
+const processDeliveredPackages = (
+    packages,
+    deliveredPackages,
+    offers,
+    baseDeliveryCost,
+    devMode = false
+) => {
+    const sortedDeliveredPackages = packageService.sortPackages(
+        packages,
+        deliveredPackages
     );
+
+    sortedDeliveredPackages.forEach((package) => {
+        const processedMessage = processIndividualPackage(
+            package,
+            offers,
+            baseDeliveryCost
+        );
+
+        if (!devMode)
+            consolePrinter.outputColoredText(processedMessage, colorEnum.green);
+    });
 };
 
-const filterOutPackages = (allPackages, packagesToFilter) => {
-    return allPackages.filter(
-        (packageFromA) =>
-            !packagesToFilter.some(
-                (packageFromB) => packageFromA.pkgId === packageFromB.pkgId
-            )
-    );
+const processUndeliveredPackages = (
+    packages,
+    offers,
+    baseDeliveryCost,
+    devMode = false
+) => {
+    packages.forEach((package) => {
+        const processedMessage = processIndividualPackage(
+            package,
+            offers,
+            baseDeliveryCost,
+            true
+        );
+        if (!devMode)
+            consolePrinter.outputColoredText(processedMessage, colorEnum.green);
+    });
 };
 
-const isNumber = (value) => {
-    return typeof value === "number" && !isNaN(value);
-};
-
-const validateOfferCode = (offerCode, offers) => {
-    return offerService.isValidOfferCode(offerCode, offers);
-};
-
-const calculateDiscountPercentage = (weight, distance, offerCode, offers) => {
-    if (validateOfferCode(offerCode, offers)) {
-        let offer = offerService.getOffer(offerCode, offers);
-        return offerService.getDiscountPercentage(weight, distance, offer);
+const constructProcessedMessage = (
+    { id, arrivalTime },
+    discountAmount,
+    totalCost,
+    skipTime
+) => {
+    if (skipTime) {
+        return `${id} ${discountAmount} ${totalCost}`;
+    } else {
+        return `${id} ${discountAmount} ${totalCost} ${arrivalTime}`;
     }
-    return 0;
 };
 
-const calculateDiscountAmount = (deliveryCost, discountPercentage) => {
-    return costCalculator.calculateDiscountAmount(
-        deliveryCost,
-        discountPercentage
-    );
-};
-
-const calculateDeliveryCost = (baseDeliveryCost, weight, distance) => {
+const getDeliveryCost = (baseDeliveryCost, weight, distance) => {
     return costCalculator.calculateDeliveryCost(
         baseDeliveryCost,
         weight,
@@ -190,82 +292,40 @@ const calculateDeliveryCost = (baseDeliveryCost, weight, distance) => {
     );
 };
 
-const calculateTotalCost = (deliveryCost, discountAmount) => {
-    return costCalculator.calculateTotalCost(deliveryCost, discountAmount);
-};
-
-const createOptimalShipment = (packages, maxCarryWeight, maxSpeed) => {
-    return shipmentService.createOptimalShipment(
-        packages,
-        maxCarryWeight,
-        maxSpeed
-    );
-};
-
-// Process individual package and output ${packageId} ${discount} ${totalCost}
-const processIndividualPackage = (
-    baseDeliveryCost,
-    { pkgId, pkgWeight, pkgDistance, offerCode },
-    offers,
-    devMode = false
-) => {
-    const weight = validateInput("package weight", pkgWeight);
-    if (typeof weight === "string") return weight;
-
-    const distance = validateInput("package distance", pkgDistance);
-    if (typeof distance === "string") return distance;
-
-    const discountPercentage = calculateDiscountPercentage(
+const getDiscountPercentage = (weight, distance, offerCode, offers) => {
+    return offerService.getDiscountPercentage(
         weight,
         distance,
         offerCode,
         offers
     );
+};
 
-    const deliveryCost = calculateDeliveryCost(
-        baseDeliveryCost,
-        weight,
-        distance
-    );
-
-    const discountAmount = calculateDiscountAmount(
+const getDiscountAmount = (deliveryCost, discountPercentage) => {
+    return costCalculator.calculateDiscountAmount(
         deliveryCost,
         discountPercentage
     );
-
-    const totalCost = calculateTotalCost(deliveryCost, discountAmount);
-
-    const processedMessage = `${pkgId} ${discountAmount} ${totalCost}`;
-    if (!devMode) outputColoredText(processedMessage, "green");
-    return processedMessage;
 };
-//#endregion
 
-//#region Main logic
-global.isNumber = isNumber;
-global.validateInput = validateInput;
-global.validatePackageId = validatePackageId;
-global.calculateDeliveryCost = calculateDeliveryCost;
-global.calculateDiscountPercentage = calculateDiscountPercentage;
-global.calculateDiscountAmount = calculateDiscountAmount;
-global.calculateTotalCost = calculateTotalCost;
-global.processIndividualPackage = processIndividualPackage;
-global.validateOfferCode = validateOfferCode;
-global.createOptimalShipment = createOptimalShipment;
+const getTotalCost = (deliveryCost, discountAmount) => {
+    return costCalculator.calculateTotalCost(deliveryCost, discountAmount);
+};
 
 try {
-    const args = process.argv.slice(2);
-    if (args.length === 0) {
+    // Since the first 2 arguments process.execPath and file path
+    const arguments = process.argv.slice(2);
+    if (arguments.length === 0) {
         console.log("No arguments supplied");
-    } else if (args[0] === "test") {
+    } else if (arguments[0] === "test") {
         runTestCases();
-    } else if (args[0] === "start") {
-        args.shift();
-        startProcessing(args);
+    } else if (arguments[0] === "start") {
+        // Remove the "start" argument since it's no longer needed
+        arguments.shift();
+        processDelivery(arguments);
     } else {
         console.log("Invalid arguments supplied");
     }
 } catch (error) {
-    outputColoredText(error, "red");
+    consolePrinter.outputColoredText(error, colorEnum.red);
 }
-//#endregion
