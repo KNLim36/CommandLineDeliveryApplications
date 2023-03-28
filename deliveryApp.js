@@ -68,7 +68,9 @@ const reportTestResults = (testCaseResults) => {
 };
 //#endregion
 
+// The entry point of the delivery cost and time calculations
 const processDelivery = (arguments) => {
+    // In the beginning we start with handling the inputs
     const { packageAmount, packageDetails, baseDeliveryCost } =
         getDeliveryDetails(arguments);
 
@@ -180,7 +182,9 @@ const deliverPackages = (
     maxSpeed,
     currentVehicleAmount
 ) => {
-    let undeliveredPackages = [...packages];
+    let undeliveredPackages = packageService.sortPackagesByWeightThenDistance([
+        ...packages,
+    ]);
     let deliveredPackages = [];
     let progressingShipments = [];
     let currentTime = 0;
@@ -231,7 +235,7 @@ const processDeliveredPackages = (
     baseDeliveryCost,
     devMode = false
 ) => {
-    const sortedDeliveredPackages = packageService.sortPackages(
+    const sortedDeliveredPackages = packageService.reorderBasedOnId(
         packages,
         deliveredPackages
     );

@@ -4,13 +4,14 @@
     "description": "A simple CLI application that calculates the delivery time and cost of a fictional logistics company.",
     "main": "deliveryApp.js",
     "scripts": {
-        "test": "node deliveryApp.js test",
-        "start": "node deliveryApp.js start",
-        "verify-cost-calculation": "node deliveryApp.js start 100 3 PKG1 5 5 OFR001 PKG2 15 5 OFR002 PKG3 10 100 OFR003",
-        "verify-cost-and-time-calculation": "node deliveryApp.js start 100 5 PKG1 50 30 OFR001 PKG2 75 125 OFR008 PKG3 175 100 OFR003 PKG4 110 60 OFR002 PKG5 155 95 NA 2 70 200",
-        "verify-double-offer-codes-both-invalid": "node deliveryApp.js start 100 3 PKG1 5 5 OFR001 OFR001 PKG2 15 5 OFR002 OFR001 PKG3 10 100 OFR001 OFR001",
-        "verify-double-offer-codes-mixed-validity": "node deliveryApp.js start 100 3 PKG1 5 5 OFR001 PKG2 15 5 OFR002 PKG3 10 100 OFR003 OFR001",
-        "verify-no-offer-code": "node deliveryApp.js start 100 3 PKG1 5 5 PKG2 15 5 PKG3 10 100"
+        "test": "node main.js test",
+        "start": "node main.js start",
+        "verify-cost-calculation": "node main.js start 100 3 PKG1 5 5 OFR001 PKG2 15 5 OFR002 PKG3 10 100 OFR003",
+        "verify-cost-and-time-calculation": "node main.js start 100 5 PKG1 50 30 OFR001 PKG2 75 125 OFR008 PKG3 175 100 OFR003 PKG4 110 60 OFR002 PKG5 155 95 NA 2 70 200",
+        "verify-double-offer-codes-both-invalid": "node main.js start 100 3 PKG1 5 5 OFR001 OFR001 PKG2 15 5 OFR002 OFR001 PKG3 10 100 OFR001 OFR001",
+        "verify-double-offer-codes-mixed-validity": "node main.js start 100 3 PKG1 5 5 OFR001 PKG2 15 5 OFR002 PKG3 10 100 OFR003 OFR001",
+        "verify-no-offer-code": "node main.js start 100 3 PKG1 5 5 PKG2 15 5 PKG3 10 100",
+        "verify-failed-test": "node main.js start 100 5 PKG1 50 100 OFR002 PKG2 50 100 OFR001 PKG3 150 100 OFR003 PKG4 99 100 OFR001 PKG5 100 100 OFR001 1 70 200"
     },
     "repository": {
         "type": "git",

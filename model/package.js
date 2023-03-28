@@ -109,8 +109,29 @@ const calculateStringInputAmount = (packageDetails) => {
     return { stringInputAmount };
 };
 
-// Sort packages sequence so it follows the originalPackages
-const sortPackages = (packages, originalPackages) => {
+const sortPackagesByWeightThenDistance = (packages) => {
+    return packages.sort((a, b) => {
+        // Compare weights
+        if (a.weight < b.weight) {
+            return -1;
+        } else if (a.weight > b.weight) {
+            return 1;
+        }
+
+        // If weights are equal, compare distances
+        if (a.distance < b.distance) {
+            return -1;
+        } else if (a.distance > b.distance) {
+            return 1;
+        }
+
+        // If both weights and distances are equal, keep the same order
+        return 0;
+    });
+};
+
+// Reorder so it follows the originalPackages' id
+const reorderBasedOnId = (packages, originalPackages) => {
     return originalPackages.sort((a, b) => {
         const indexA = packages.findIndex((obj) => obj.id === a.id);
         const indexB = packages.findIndex((obj) => obj.id === b.id);
@@ -151,14 +172,14 @@ const getOfferCodes = (packageDetails, currentPackageIndex, packageAmount) => {
 const packageService = {
     generateSinglePackage,
     generatePackages,
-    sortPackages,
+    reorderBasedOnId,
     filterOutPackages,
+    sortPackagesByWeightThenDistance,
 };
 
 module.exports = {
     Package,
     ProcessedPackage,
-    createPackage,
     truncateDecimalToTwoPlaces,
     packageService,
 };

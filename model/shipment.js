@@ -29,6 +29,8 @@ const getHighestWeight = (itemA, itemB) => {
     return itemA.totalWeight > itemB.totalWeight ? itemA : itemB;
 };
 
+// Based on all currently available packages, we plan out a
+// distance and weight optimized shipment
 const createOptimalShipment = (
     packages,
     maxCarryWeight,
@@ -40,7 +42,6 @@ const createOptimalShipment = (
     for (let i = 0; i < packages.length; i++) {
         const shipment = [];
         const package = packages[i];
-
         let totalWeight = 0;
 
         if (package.weight <= maxCarryWeight) {
@@ -62,7 +63,8 @@ const createOptimalShipment = (
             totalWeight += package.weight;
         }
 
-        for (let j = i + 1; j < packages.length; j++) {
+        for (let j = 0; j < packages.length; j++) {
+            if (i === j) continue;
             const sibling = packages[j];
             const { id, weight, distance, offerCode } = sibling;
 
@@ -90,7 +92,7 @@ const createOptimalShipment = (
             totalWeight,
         });
     }
-
+    
     const optimalShipment = findHeaviestShipment(processedPackages);
 
     const shipmentDeliveryDuration =
