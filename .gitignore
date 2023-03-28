@@ -1,0 +1,50 @@
+# Node.js
+node_modules/
+
+# Dependency directories
+bower_components/
+jspm_packages/
+
+# Compiled files
+dist/
+build/
+*.min.*
+
+# Log files and runtime data
+logs/
+*.log
+*.pid
+*.out
+*.gz
+
+# Cache and temporary files
+.cache/
+.tmp/
+.temp/
+*.tmp
+*.swp
+*.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.sublime*
+*.tmproj
+
+# Configuration files
+.env
+.env.*
+*.env
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+.env.*.local
+
+# Miscellaneous
+.DS_Store
+Thumbs.db
