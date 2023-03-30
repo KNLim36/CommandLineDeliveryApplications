@@ -1,4 +1,4 @@
-const { inputValidator } = require("../utils/inputValidator");
+const { inputHandler } = require("../utils/inputHandler");
 
 const maxOfferCodesPerPackage = 1;
 
@@ -51,7 +51,7 @@ const Offer = (offer) =>
     });
 
 const validateRange = (value, range, maxRangeInclusive) =>
-    inputValidator.validateRange(value, range, maxRangeInclusive);
+    inputHandler.validateRange(value, range, maxRangeInclusive);
 
 // Import the offers array from config
 const offerConfig = require("../config/offerConfig.json");

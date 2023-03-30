@@ -2,9 +2,10 @@
     "name": "commandlinedeliveryapplications",
     "version": "1.0.0",
     "description": "A simple CLI application that calculates the delivery time and cost of a fictional logistics company.",
-    "main": "deliveryApp.js",
+    "main": "main.js",
+    "type": "commonjs",
     "scripts": {
-        "test": "node main.js test",
+        "test": "npx mocha **/*.test.js --exit",
         "start": "node main.js start",
         "verify-cost-calculation": "node main.js start 100 3 PKG1 5 5 OFR001 PKG2 15 5 OFR002 PKG3 10 100 OFR003",
         "verify-cost-and-time-calculation": "node main.js start 100 5 PKG1 50 30 OFR001 PKG2 75 125 OFR008 PKG3 175 100 OFR003 PKG4 110 60 OFR002 PKG5 155 95 NA 2 70 200",

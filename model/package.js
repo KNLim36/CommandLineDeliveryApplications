@@ -1,4 +1,4 @@
-const { inputValidator } = require("../utils/inputValidator");
+const { inputHandler } = require("../utils/inputHandler");
 const { offerService } = require("../model/offer");
 
 const maxPackageIdsPerPackage = 1;
@@ -8,17 +8,19 @@ const createPackage = (
     weight,
     distance,
     offerCode,
+    submittedOfferCodes,
     computeDeliverySchedule
 ) => ({
     id,
     weight,
     distance,
     offerCode,
+    submittedOfferCodes,
     computeDeliverySchedule,
 });
 
-const truncateDecimalToTwoPlaces = (num) => {
-    return Math.trunc(num * 100) / 100;
+const truncateDecimalToTwoPlaces = (numberToTruncate) => {
+    return Math.trunc(numberToTruncate * 100) / 100;
 };
 
 const calculatePackageTiming = (distance, maxSpeed, currentTime) => {
@@ -33,10 +35,17 @@ const calculatePackageTiming = (distance, maxSpeed, currentTime) => {
 };
 
 // Package factory function
-const Package = (id, weight, distance, offerCode) =>
-    createPackage(id, weight, distance, offerCode, (maxSpeed, currentTime) => {
-        return calculatePackageTiming(distance, maxSpeed, currentTime);
-    });
+const Package = (id, weight, distance, offerCode, submittedOfferCodes) =>
+    createPackage(
+        id,
+        weight,
+        distance,
+        offerCode,
+        submittedOfferCodes,
+        (maxSpeed, currentTime) => {
+            return calculatePackageTiming(distance, maxSpeed, currentTime);
+        }
+    );
 
 // ProcessedPackage factory function that inherits from Package
 const ProcessedPackage = (
@@ -44,6 +53,7 @@ const ProcessedPackage = (
     weight,
     distance,
     offerCode,
+    submittedOfferCodes,
     deliveryDuration,
     departureTime,
     arrivalTime
@@ -52,6 +62,7 @@ const ProcessedPackage = (
     weight,
     distance,
     offerCode,
+    submittedOfferCodes,
     deliveryDuration,
     departureTime,
     arrivalTime,
@@ -71,13 +82,20 @@ const generateSinglePackage = (
     const id = getId(packageDetails);
     const weight = getWeight(packageDetails);
     const distance = getDistance(packageDetails);
-    const offerCodes = getOfferCodes(
+    const submittedOfferCodes = getOfferCodes(
         packageDetails,
         currentPackageIndex,
         packageAmount
     );
-    const eligibleOfferCode = offerService.getEligibleOfferCode(offerCodes);
-    return Package(id, weight, distance, eligibleOfferCode);
+    const eligibleOfferCode =
+        offerService.getEligibleOfferCode(submittedOfferCodes);
+    return Package(
+        id,
+        weight,
+        distance,
+        eligibleOfferCode,
+        submittedOfferCodes
+    );
 };
 
 const getId = (packageDetails) => {
@@ -86,25 +104,22 @@ const getId = (packageDetails) => {
 
 const getWeight = (packageDetails) => {
     const weightInput = packageDetails.shift();
-    return inputValidator.validateNumericInput("weight", weightInput);
+    return inputHandler.validateFloatInput("weight", weightInput);
 };
 
 const getDistance = (packageDetails) => {
     const distanceInput = packageDetails.shift();
-    return inputValidator.validateNumericInput("distance", distanceInput);
+    return inputHandler.validateFloatInput("distance", distanceInput);
 };
 
 const calculateStringInputAmount = (packageDetails) => {
     let stringInputAmount = 0;
     let foundNumberIndex = packageDetails.findIndex((detail) =>
-        inputValidator.isNumber(parseFloat(detail))
+        inputHandler.isNumber(parseFloat(detail))
     );
 
-    if (foundNumberIndex === -1) {
-        stringInputAmount = packageDetails.length;
-    } else {
-        stringInputAmount = foundNumberIndex;
-    }
+    stringInputAmount =
+        foundNumberIndex === -1 ? packageDetails.length : foundNumberIndex;
 
     return { stringInputAmount };
 };

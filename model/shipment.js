@@ -11,6 +11,8 @@ const Shipment = (
     totalWeight,
 });
 
+const util = require("util");
+
 const findHeaviestShipment = (items) => {
     return items.reduce(getHighestAmount, items[0]);
 };
@@ -45,7 +47,8 @@ const createOptimalShipment = (
         let totalWeight = 0;
 
         if (package.weight <= maxCarryWeight) {
-            const { id, weight, distance, offerCode } = package;
+            const { id, weight, distance, offerCode, submittedOfferCodes } =
+                package;
             const { deliveryDuration, departureTime, arrivalTime } =
                 package.computeDeliverySchedule(maxSpeed, currentTime);
 
@@ -55,6 +58,7 @@ const createOptimalShipment = (
                     weight,
                     distance,
                     offerCode,
+                    submittedOfferCodes,
                     deliveryDuration,
                     departureTime,
                     arrivalTime
@@ -66,7 +70,8 @@ const createOptimalShipment = (
         for (let j = 0; j < packages.length; j++) {
             if (i === j) continue;
             const sibling = packages[j];
-            const { id, weight, distance, offerCode } = sibling;
+            const { id, weight, distance, offerCode, submittedOfferCodes } =
+                sibling;
 
             if (sibling.weight + totalWeight <= maxCarryWeight) {
                 const { deliveryDuration, departureTime, arrivalTime } =
@@ -77,6 +82,7 @@ const createOptimalShipment = (
                         weight,
                         distance,
                         offerCode,
+                        submittedOfferCodes,
                         deliveryDuration,
                         departureTime,
                         arrivalTime
@@ -92,7 +98,7 @@ const createOptimalShipment = (
             totalWeight,
         });
     }
-    
+
     const optimalShipment = findHeaviestShipment(processedPackages);
 
     const shipmentDeliveryDuration =
