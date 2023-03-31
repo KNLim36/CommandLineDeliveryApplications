@@ -1,5 +1,8 @@
 const calculateDeliveryCost = (baseDeliveryCost, weight, distance) => {
-    return baseDeliveryCost + weight * 10 + distance * 5;
+    const calculatedDeliveryCost =
+        baseDeliveryCost + weight * 10 + distance * 5;
+    const roundedCost = calculatedDeliveryCost.toFixed(2);
+    return parseFloat(roundedCost);
 };
 
 const calculateDiscountAmount = (cost, discountPercentage) => {

@@ -1,16 +1,16 @@
-const { inputHandler } = require("../utils/inputHandler");
+const { inputValidator } = require("../utils/inputValidator");
 const { offerService } = require("../model/offer");
 
 const maxPackageIdsPerPackage = 1;
 
-const createPackage = (
+const createPackage = ({
     id,
     weight,
     distance,
     offerCode,
     submittedOfferCodes,
-    computeDeliverySchedule
-) => ({
+    computeDeliverySchedule,
+}) => ({
     id,
     weight,
     distance,
@@ -19,33 +19,16 @@ const createPackage = (
     computeDeliverySchedule,
 });
 
-const truncateDecimalToTwoPlaces = (numberToTruncate) => {
-    return Math.trunc(numberToTruncate * 100) / 100;
-};
-
-const calculatePackageTiming = (distance, maxSpeed, currentTime) => {
-    const baseTime = truncateDecimalToTwoPlaces(currentTime);
-    const deliveryDuration = truncateDecimalToTwoPlaces(distance / maxSpeed);
-    const arrivalTiming = Number((baseTime + deliveryDuration).toFixed(2));
-    return {
-        deliveryDuration,
-        departureTime: baseTime,
-        arrivalTime: arrivalTiming,
-    };
-};
-
 // Package factory function
 const Package = (id, weight, distance, offerCode, submittedOfferCodes) =>
-    createPackage(
+    createPackage({
         id,
         weight,
         distance,
         offerCode,
         submittedOfferCodes,
-        (maxSpeed, currentTime) => {
-            return calculatePackageTiming(distance, maxSpeed, currentTime);
-        }
-    );
+        computeDeliverySchedule: calculateDeliverySchedule,
+    });
 
 // ProcessedPackage factory function that inherits from Package
 const ProcessedPackage = (
@@ -68,6 +51,25 @@ const ProcessedPackage = (
     arrivalTime,
 });
 
+const calculateDeliverySchedule = (distance, maxSpeed, currentTime) => {
+    return calculatePackageTiming(distance, maxSpeed, currentTime);
+};
+
+const calculatePackageTiming = (distance, maxSpeed, currentTime) => {
+    const baseTime = truncateDecimalToTwoPlaces(currentTime);
+    const deliveryDuration = truncateDecimalToTwoPlaces(distance / maxSpeed);
+    const arrivalTiming = Number((baseTime + deliveryDuration).toFixed(2));
+    return {
+        deliveryDuration,
+        departureTime: baseTime,
+        arrivalTime: arrivalTiming,
+    };
+};
+
+const truncateDecimalToTwoPlaces = (numberToTruncate) => {
+    return Math.trunc(numberToTruncate * 100) / 100;
+};
+
 const generatePackages = (packageAmount, packageDetails) => {
     return Array.from({ length: packageAmount }, (_, i) => {
         return generateSinglePackage(packageAmount, packageDetails, i);
@@ -82,7 +84,8 @@ const generateSinglePackage = (
     const id = getId(packageDetails);
     const weight = getWeight(packageDetails);
     const distance = getDistance(packageDetails);
-    const submittedOfferCodes = getOfferCodes(
+
+    const submittedOfferCodes = getSubmittedOfferCodes(
         packageDetails,
         currentPackageIndex,
         packageAmount
@@ -104,18 +107,18 @@ const getId = (packageDetails) => {
 
 const getWeight = (packageDetails) => {
     const weightInput = packageDetails.shift();
-    return inputHandler.validateFloatInput("weight", weightInput);
+    return inputValidator.validateFloatInput("weight", weightInput);
 };
 
 const getDistance = (packageDetails) => {
     const distanceInput = packageDetails.shift();
-    return inputHandler.validateFloatInput("distance", distanceInput);
+    return inputValidator.validateFloatInput("distance", distanceInput);
 };
 
 const calculateStringInputAmount = (packageDetails) => {
     let stringInputAmount = 0;
-    let foundNumberIndex = packageDetails.findIndex((detail) =>
-        inputHandler.isNumber(parseFloat(detail))
+    const foundNumberIndex = packageDetails.findIndex((detail) =>
+        inputValidator.isNumber(parseFloat(detail))
     );
 
     stringInputAmount =
@@ -145,7 +148,7 @@ const sortPackagesByWeightThenDistance = (packages) => {
     });
 };
 
-// Reorder so it follows the originalPackages' id
+// Reorder packages so it follows the originalPackages' id
 const reorderBasedOnId = (packages, originalPackages) => {
     return originalPackages.sort((a, b) => {
         const indexA = packages.findIndex((obj) => obj.id === a.id);
@@ -163,7 +166,11 @@ const filterOutPackages = (allPackages, packagesToRemove) =>
     );
 
 // Users might submit 0, 1 or more than 1 offer codes
-const getOfferCodes = (packageDetails, currentPackageIndex, packageAmount) => {
+const getSubmittedOfferCodes = (
+    packageDetails,
+    currentPackageIndex,
+    packageAmount
+) => {
     const isLastPackageInList = currentPackageIndex === packageAmount - 1;
     const offerCodes = [];
 
@@ -190,6 +197,8 @@ const packageService = {
     reorderBasedOnId,
     filterOutPackages,
     sortPackagesByWeightThenDistance,
+    calculatePackageTiming,
+    calculateDeliverySchedule,
 };
 
 module.exports = {

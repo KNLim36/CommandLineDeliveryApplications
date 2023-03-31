@@ -1,6 +1,5 @@
-const { offers } = require("./model/offer");
 const { packageService } = require("./model/package");
-const { inputHandler } = require("./utils/inputHandler");
+const { inputValidator } = require("./utils/inputValidator");
 const { consolePrinter, colorCodeEnum } = require("./utils/consolePrinter");
 
 const readline = require("readline");
@@ -12,10 +11,27 @@ const processEnum = {
     inputBaseDeliveryCost: 1,
     inputPackageAmount: 2,
     inputPackageDetails: 3,
-    inputVehicleAmount: 4,
-    inputVehicleMaxSpeed: 5,
-    inputVehicleMaxCarryWeight: 6,
-    resultOutput: 7,
+    inputProcessFlow: 4,
+    inputVehicleAmount: 5,
+    inputVehicleMaxSpeed: 6,
+    inputVehicleMaxCarryWeight: 7,
+    outputResults: 8,
+};
+
+const validateFloat = (inputName, input) => {
+    return inputValidator.validateFloatInput(inputName, input);
+};
+
+const promptStartCommand = (readlineInstance) => {
+    consolePrinter.print(
+        `Invalid command. Please enter a valid command.`,
+        colorCodeEnum.red
+    );
+    consolePrinter.print(
+        'To begin, input the "start" command (without double-quotes) and press the "Enter" or "Return" key.',
+        colorCodeEnum.green
+    );
+    readlineInstance.prompt();
 };
 
 const verifyStartCommand = (input, readlineInstance, step) => {
@@ -31,24 +47,13 @@ const verifyStartCommand = (input, readlineInstance, step) => {
         step.value = processEnum.inputBaseDeliveryCost;
         readlineInstance.prompt();
     } else {
-        consolePrinter.print(
-            `Invalid command. Please enter a valid command.`,
-            colorCodeEnum.red
-        );
-        consolePrinter.print(
-            'To begin, input the "start" command (without double-quotes) and press the "Enter" or "Return" key.',
-            colorCodeEnum.green
-        );
-        readlineInstance.prompt();
+        promptStartCommand(readlineInstance);
     }
 };
 
-const handleBaseDeliveryCost = (input, readlineInterface, step, delivery) => {
+const verifyBaseDeliveryCost = (input, readlineInstance, step, delivery) => {
     const currentInputName = "base delivery cost";
-    const validatedDeliveryCost = inputHandler.validateFloatInput(
-        currentInputName,
-        input
-    );
+    const validatedDeliveryCost = validateFloat(currentInputName, input);
 
     if (typeof validatedDeliveryCost !== "string") {
         delivery.setBaseDeliveryCost(validatedDeliveryCost);
@@ -61,22 +66,19 @@ const handleBaseDeliveryCost = (input, readlineInterface, step, delivery) => {
             colorCodeEnum.brightBlue
         );
         step.value = processEnum.inputPackageAmount;
-        readlineInterface.prompt();
+        readlineInstance.prompt();
     } else {
         consolePrinter.print(
             "Please enter a base delivery cost (the flat cost that will be applied to each of the package(s)",
             colorCodeEnum.brightBlue
         );
-        readlineInterface.prompt();
+        readlineInstance.prompt();
     }
 };
 
-const handlePackageAmount = (input, readlineInterface, step, delivery) => {
+const verifyPackageAmount = (input, readlineInstance, step, delivery) => {
     const currentInputName = "package amount";
-    validatedPackageAmount = inputHandler.validateIntegerInput(
-        currentInputName,
-        input
-    );
+    const validatedPackageAmount = validateFloat(currentInputName, input);
 
     if (typeof validatedPackageAmount !== "string") {
         delivery.setPackageAmount(validatedPackageAmount);
@@ -93,7 +95,7 @@ const handlePackageAmount = (input, readlineInterface, step, delivery) => {
             colorCodeEnum.green
         );
         step.value = processEnum.inputPackageDetails;
-        readlineInterface.prompt();
+        readlineInstance.prompt();
     } else {
         consolePrinter.print(
             `Please enter the number of packages:`,
@@ -102,30 +104,44 @@ const handlePackageAmount = (input, readlineInterface, step, delivery) => {
     }
 };
 
-const handlePackageDetails = (input, readlineInterface, step, delivery) => {
+const verifyPackageDetails = (input, readlineInstance, step, delivery) => {
+    // 1 package should have at least 3 details: name, weight, distance
+    const minimumPackageDetailsLength = delivery.getPackageAmount() * 3;
+
     const packageDetails = input.split(" ");
-    const inputGeneratedPackages = packageService.generatePackages(
-        delivery.getPackageAmount(),
-        packageDetails
-    );
-    const packages = [];
-    inputGeneratedPackages.forEach((package) => {
-        packages.push(package);
-        consolePrinter.print(
-            `The package with package name ${package.id} has been added`,
-            colorCodeEnum.cyan
+    if (packageDetails.length >= minimumPackageDetailsLength) {
+        const inputGeneratedPackages = packageService.generatePackages(
+            delivery.getPackageAmount(),
+            packageDetails
         );
-    });
-    delivery.setPackages(packages);
-    consolePrinter.print(
-        "Enter 'cost' to calculate the cost or 'add' to include vehicle information and estimate both cost and time.",
-        colorCodeEnum.brightBlue
-    );
-    step.value = processEnum.inputVehicleAmount;
-    readlineInterface.prompt();
+        const packages = [];
+        inputGeneratedPackages.forEach((package) => {
+            packages.push(package);
+            consolePrinter.print(
+                `The package with package name ${package.id} has been added`,
+                colorCodeEnum.cyan
+            );
+        });
+        delivery.setPackages(packages);
+        consolePrinter.print(
+            "Enter 'cost' to calculate the cost or 'add' to include vehicle information and estimate both cost and time.",
+            colorCodeEnum.brightBlue
+        );
+        step.value = processEnum.inputProcessFlow;
+        readlineInstance.prompt();
+    } else {
+        consolePrinter.print(
+            "Please enter the package details in the following format: 'package name', 'weight', 'distance', 'offer code(s)'.",
+            colorCodeEnum.brightBlue
+        );
+        consolePrinter.print(
+            "For example: 'PKG1 5 5 OFR001 PKG2 15 5 OFR002 PKG3 10 100 OFR003'.",
+            colorCodeEnum.green
+        );
+    }
 };
 
-const handleVehicleAmount = (input, readlineInterface, step, delivery) => {
+const verifyProcessFlow = (input, readlineInstance, step, delivery) => {
     if (input === "cost") {
         consolePrinter.print(
             "You are now in the cost calculation module.",
@@ -136,28 +152,26 @@ const handleVehicleAmount = (input, readlineInterface, step, delivery) => {
             "Enter 'add' to include vehicle information and estimate both cost and time, or 'quit' to exit the application.",
             colorCodeEnum.brightBlue
         );
+        readlineInstance.prompt();
     } else if (input === "add") {
         consolePrinter.print(
             `Please enter the number of vehicles:`,
             colorCodeEnum.brightBlue
         );
-        step.value = processEnum.inputVehicleMaxSpeed;
-        readlineInterface.prompt();
+        step.value = processEnum.inputVehicleAmount;
+        readlineInstance.prompt();
     } else if (input === "quit") {
         consolePrinter.print(
             `Shutting down the application.`,
             colorCodeEnum.red
         );
-        readlineInterface.close();
+        readlineInstance.close();
     }
 };
 
-const handleVehicleMaxSpeed = (input, readlineInterface, step, delivery) => {
+const verifyVehicleAmount = (input, readlineInstance, step, delivery) => {
     const currentInputName = "vehicle amount";
-    const validatedVehicleAmount = inputHandler.validateIntegerInput(
-        currentInputName,
-        input
-    );
+    const validatedVehicleAmount = validateFloat(currentInputName, input);
     if (typeof validatedVehicleAmount !== "string") {
         delivery.setVehicleAmount(validatedVehicleAmount);
         consolePrinter.print(
@@ -168,8 +182,8 @@ const handleVehicleMaxSpeed = (input, readlineInterface, step, delivery) => {
             `Please enter the vehicle max speed.`,
             colorCodeEnum.brightBlue
         );
-        step.value = processEnum.inputVehicleMaxCarryWeight;
-        readlineInterface.prompt();
+        step.value = processEnum.inputVehicleMaxSpeed;
+        readlineInstance.prompt();
     } else {
         consolePrinter.print(
             `Please enter the vehicle amount.`,
@@ -178,17 +192,9 @@ const handleVehicleMaxSpeed = (input, readlineInterface, step, delivery) => {
     }
 };
 
-const handleVehicleMaxCarryWeight = (
-    input,
-    readlineInterface,
-    step,
-    delivery
-) => {
+const VerifyVehicleMaxSpeed = (input, readlineInstance, step, delivery) => {
     const currentInputName = "vehicle max speed";
-    const validatedVehicleMaxSpeed = inputHandler.validateIntegerInput(
-        currentInputName,
-        input
-    );
+    const validatedVehicleMaxSpeed = validateFloat(currentInputName, input);
 
     if (typeof validatedVehicleMaxSpeed !== "string") {
         delivery.setVehicleMaxSpeed(validatedVehicleMaxSpeed);
@@ -200,8 +206,8 @@ const handleVehicleMaxCarryWeight = (
             `Please enter the vehicle max carry weight.`,
             colorCodeEnum.brightBlue
         );
-        step.value = processEnum.resultOutput;
-        readlineInterface.prompt();
+        step.value = processEnum.inputVehicleMaxCarryWeight;
+        readlineInstance.prompt();
     } else {
         consolePrinter.print(
             `Please enter the vehicle max speed.`,
@@ -210,12 +216,14 @@ const handleVehicleMaxCarryWeight = (
     }
 };
 
-const handleResultOutput = (input, readlineInterface, step, delivery) => {
+const verifyVehicleMaxCarryWeight = (
+    input,
+    readlineInstance,
+    step,
+    delivery
+) => {
     const currentInputName = "vehicle max carry weight";
-    const validatedMaxCarryWeight = inputHandler.validateIntegerInput(
-        currentInputName,
-        input
-    );
+    const validatedMaxCarryWeight = validateFloat(currentInputName, input);
 
     if (typeof validatedMaxCarryWeight !== "string") {
         delivery.setVehicleMaxCarryWeight(validatedMaxCarryWeight);
@@ -225,18 +233,35 @@ const handleResultOutput = (input, readlineInterface, step, delivery) => {
         );
 
         consolePrinter.print(
-            `Start delivering packages!`,
+            `Start delivering packages by entering "deliver"!`,
             colorCodeEnum.magenta
         );
 
-        delivery.calculateDeliveredPackages();
-        delivery.outputPackage();
-        readlineInterface.close();
+        step.value = processEnum.outputResults;
+        readlineInstance.prompt();
     } else {
         consolePrinter.print(
             `Please enter the vehicle max carry weight.`,
             colorCodeEnum.brightBlue
         );
+    }
+};
+
+const outputResults = (input, readlineInstance, step, delivery) => {
+    if (input === "deliver") {
+        delivery.computeDeliveredPackages();
+        delivery.outputPackage();
+        readlineInstance.close();
+    } else {
+        consolePrinter.print(
+            `Invalid command. Please enter a valid command.`,
+            colorCodeEnum.red
+        );
+        consolePrinter.print(
+            `Start delivering packages by entering "deliver"!`,
+            colorCodeEnum.green
+        );
+        readlineInstance.prompt();
     }
 };
 
@@ -250,7 +275,7 @@ try {
     const mainDelivery = deliveryService.createDelivery();
 
     // Initializes the line-by-line user interaction
-    let step = { value: 0 };
+    const step = { value: 0 };
 
     const rl = readline.createInterface({
         input: process.stdin,
@@ -259,38 +284,42 @@ try {
     });
 
     rl.on("line", async (line) => {
-        let input = line.trim();
+        const input = line.trim();
         switch (step.value) {
             case processEnum.inputStartCommand:
                 verifyStartCommand(input, rl, step);
                 break;
 
             case processEnum.inputBaseDeliveryCost:
-                handleBaseDeliveryCost(input, rl, step, mainDelivery);
+                verifyBaseDeliveryCost(input, rl, step, mainDelivery);
                 break;
 
             case processEnum.inputPackageAmount:
-                handlePackageAmount(input, rl, step, mainDelivery);
+                verifyPackageAmount(input, rl, step, mainDelivery);
                 break;
 
             case processEnum.inputPackageDetails:
-                handlePackageDetails(input, rl, step, mainDelivery);
+                verifyPackageDetails(input, rl, step, mainDelivery);
+                break;
+
+            case processEnum.inputProcessFlow:
+                verifyProcessFlow(input, rl, step, mainDelivery);
                 break;
 
             case processEnum.inputVehicleAmount:
-                handleVehicleAmount(input, rl, step, mainDelivery);
+                verifyVehicleAmount(input, rl, step, mainDelivery);
                 break;
 
             case processEnum.inputVehicleMaxSpeed:
-                handleVehicleMaxSpeed(input, rl, step, mainDelivery);
+                VerifyVehicleMaxSpeed(input, rl, step, mainDelivery);
                 break;
 
             case processEnum.inputVehicleMaxCarryWeight:
-                handleVehicleMaxCarryWeight(input, rl, step, mainDelivery);
+                verifyVehicleMaxCarryWeight(input, rl, step, mainDelivery);
                 break;
 
-            case processEnum.resultOutput:
-                handleResultOutput(input, rl, step, mainDelivery);
+            case processEnum.outputResults:
+                outputResults(input, rl, step, mainDelivery);
                 break;
         }
     });

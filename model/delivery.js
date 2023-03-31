@@ -73,7 +73,11 @@ const createDelivery = () => {
         packages = newPackages;
     };
 
-    delivery.calculateDeliveredPackages = () => {
+    delivery.getDeliveredPackages = () => {
+        return deliveredPackages;
+    };
+
+    delivery.computeDeliveredPackages = () => {
         let undeliveredPackages =
             packageService.sortPackagesByWeightThenDistance([...packages]);
         let progressingShipments = [];
@@ -116,23 +120,33 @@ const createDelivery = () => {
                 );
             }
         }
+
+        deliveredPackages = packageService.reorderBasedOnId(
+            packages,
+            deliveredPackages
+        );
     };
 
-    delivery.outputPackage = (needSort = false, devMode = false) => {
-        let packageToOutput = needSort
-            ? packageService.reorderBasedOnId(packages, deliveredPackages)
+    delivery.outputPackage = (devMode = false) => {
+        const packageToOutput = deliveredPackages.length
+            ? deliveredPackages
             : packages;
+        const outputMessages = [];
         packageToOutput.forEach((package) => {
             const processedMessage = constructPackageMessage(
                 package,
-                baseDeliveryCost
+                baseDeliveryCost,
+                true
             );
-            if (!devMode)
+            outputMessages.push(processedMessage);
+            if (!devMode) {
                 consolePrinter.outputColoredText(
                     processedMessage,
                     colorCodeEnum.brightMagenta
                 );
+            }
         });
+        return outputMessages;
     };
 
     return delivery;
@@ -140,7 +154,8 @@ const createDelivery = () => {
 
 const constructPackageMessage = (
     { id, weight, distance, offerCode, arrivalTime },
-    baseDeliveryCost
+    baseDeliveryCost,
+    devMode = false
 ) => {
     const deliveryCost = costCalculator.calculateDeliveryCost(
         baseDeliveryCost,
@@ -161,9 +176,11 @@ const constructPackageMessage = (
         deliveryCost,
         discountAmount
     );
-    consolePrinter.print(
-        `${id} has delivery cost ${deliveryCost}, discount percentage ${discountPercentage}, discount amount ${discountAmount}, total cost: ${totalCost}`
-    );
+    if (!devMode) {
+        consolePrinter.print(
+            `${id} has delivery cost ${deliveryCost}, discount percentage ${discountPercentage}, discount amount ${discountAmount}, total cost: ${totalCost}`
+        );
+    }
     return consolePrinter.constructProcessedMessage(
         { id, arrivalTime },
         discountAmount,

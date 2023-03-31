@@ -7,17 +7,17 @@ const validateRange = (value, range, rangeMaxInclusive) =>
 
 const isNumber = (value) => typeof value === "number" && !isNaN(value);
 
-const validateFloatInput = (inputName, inputValue) => {
+const validateFloatInput = (inputName, inputValue, devMode = false) => {
     const regex = /^[+-]?\d+(\.\d+)?$/;
     if (!regex.test(inputValue)) {
         const errorMessage = `The provided value for the ${inputName} is invalid. The received value is ${inputValue}, which is not a valid float.`;
-        consolePrinter.print(errorMessage, colorCodeEnum.red);
+        if (!devMode) consolePrinter.print(errorMessage, colorCodeEnum.red);
         return errorMessage;
     }
     const parsedValue = parseFloat(inputValue);
     if (isNaN(parsedValue)) {
         const errorMessage = `The provided value for the ${inputName} is invalid. The received value is ${inputValue}, which is not a valid float.`;
-        consolePrinter.print(errorMessage, colorCodeEnum.red);
+        if (!devMode) consolePrinter.print(errorMessage, colorCodeEnum.red);
         return errorMessage;
     }
     return parsedValue;
@@ -30,7 +30,7 @@ const getRemainingInput = (arguments) => {
     const [vehicleAmount, maxSpeed, maxCarryWeight] = arguments;
     if (vehicleAmount && maxSpeed && maxCarryWeight) {
         const [validVehicleAmount, validMaxSpeed, validMaxCarryWeight] =
-            inputHandler.validateArguments(
+            inputValidator.validateArguments(
                 ["Vehicle amount", "Max speed", "Max carry weight"],
                 [vehicleAmount, maxSpeed, maxCarryWeight]
             );
@@ -54,7 +54,7 @@ const separateInputArguments = (arguments) => {
 };
 
 const validateDeliveryDetails = (validateLabels, inputs) => {
-    return inputHandler.validateArguments(validateLabels, inputs);
+    return inputValidator.validateArguments(validateLabels, inputs);
 };
 
 const getDeliveryDetails = (arguments) => {
@@ -69,7 +69,7 @@ const getDeliveryDetails = (arguments) => {
     return { packageAmount, baseDeliveryCost, packageDetails };
 };
 
-const inputHandler = {
+const inputValidator = {
     validateRange,
     isNumber,
     validateFloatInput,
@@ -79,5 +79,5 @@ const inputHandler = {
 };
 
 module.exports = {
-    inputHandler,
+    inputValidator,
 };
