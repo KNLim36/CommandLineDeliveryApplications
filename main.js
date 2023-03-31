@@ -101,6 +101,7 @@ const verifyPackageAmount = (input, readlineInstance, step, delivery) => {
             `Please enter the number of packages:`,
             colorCodeEnum.brightBlue
         );
+        readlineInstance.prompt();
     }
 };
 
@@ -138,6 +139,7 @@ const verifyPackageDetails = (input, readlineInstance, step, delivery) => {
             "For example: 'PKG1 5 5 OFR001 PKG2 15 5 OFR002 PKG3 10 100 OFR003'.",
             colorCodeEnum.green
         );
+        readlineInstance.prompt();
     }
 };
 
@@ -166,12 +168,19 @@ const verifyProcessFlow = (input, readlineInstance, step, delivery) => {
             colorCodeEnum.red
         );
         readlineInstance.close();
+    } else {
+        consolePrinter.print(
+            "Enter 'cost' to calculate the cost or 'add' to include vehicle information and estimate both cost and time.",
+            colorCodeEnum.brightBlue
+        );
+        readlineInstance.prompt();
     }
 };
 
 const verifyVehicleAmount = (input, readlineInstance, step, delivery) => {
     const currentInputName = "vehicle amount";
     const validatedVehicleAmount = validateFloat(currentInputName, input);
+
     if (typeof validatedVehicleAmount !== "string") {
         delivery.setVehicleAmount(validatedVehicleAmount);
         consolePrinter.print(
@@ -186,9 +195,10 @@ const verifyVehicleAmount = (input, readlineInstance, step, delivery) => {
         readlineInstance.prompt();
     } else {
         consolePrinter.print(
-            `Please enter the vehicle amount.`,
+            `Please enter the number of vehicles:`,
             colorCodeEnum.brightBlue
         );
+        readlineInstance.prompt();
     }
 };
 
@@ -213,6 +223,7 @@ const VerifyVehicleMaxSpeed = (input, readlineInstance, step, delivery) => {
             `Please enter the vehicle max speed.`,
             colorCodeEnum.brightBlue
         );
+        readlineInstance.prompt();
     }
 };
 
@@ -225,7 +236,10 @@ const verifyVehicleMaxCarryWeight = (
     const currentInputName = "vehicle max carry weight";
     const validatedMaxCarryWeight = validateFloat(currentInputName, input);
 
-    if (typeof validatedMaxCarryWeight !== "string") {
+    if (
+        typeof validatedMaxCarryWeight !== "string" &&
+        delivery.validateWeightWithPackages(validatedMaxCarryWeight)
+    ) {
         delivery.setVehicleMaxCarryWeight(validatedMaxCarryWeight);
         consolePrinter.print(
             `The ${currentInputName} is ${delivery.getVehicleMaxCarryWeight()}.`,
@@ -241,9 +255,10 @@ const verifyVehicleMaxCarryWeight = (
         readlineInstance.prompt();
     } else {
         consolePrinter.print(
-            `Please enter the vehicle max carry weight.`,
+            `Please enter the vehicle max carry weight. The heaviest package has weight ${delivery.getHeaviestPackageWeight()}`,
             colorCodeEnum.brightBlue
         );
+        readlineInstance.prompt();
     }
 };
 
