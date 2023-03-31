@@ -3,22 +3,56 @@ const { offerService } = require("../model/offer");
 
 const maxPackageIdsPerPackage = 1;
 
-const createPackage = (
+const createPackage = ({
     id,
     weight,
     distance,
     offerCode,
-    computeDeliverySchedule
+    submittedOfferCodes,
+    computeDeliverySchedule,
+}) => ({
+    id,
+    weight,
+    distance,
+    offerCode,
+    submittedOfferCodes,
+    computeDeliverySchedule,
+});
+
+// Package factory function
+const Package = (id, weight, distance, offerCode, submittedOfferCodes) =>
+    createPackage({
+        id,
+        weight,
+        distance,
+        offerCode,
+        submittedOfferCodes,
+        computeDeliverySchedule: calculateDeliverySchedule,
+    });
+
+// ProcessedPackage factory function that inherits from Package
+const ProcessedPackage = (
+    id,
+    weight,
+    distance,
+    offerCode,
+    submittedOfferCodes,
+    deliveryDuration,
+    departureTime,
+    arrivalTime
 ) => ({
     id,
     weight,
     distance,
     offerCode,
-    computeDeliverySchedule,
+    submittedOfferCodes,
+    deliveryDuration,
+    departureTime,
+    arrivalTime,
 });
 
-const truncateDecimalToTwoPlaces = (num) => {
-    return Math.trunc(num * 100) / 100;
+const calculateDeliverySchedule = (distance, maxSpeed, currentTime) => {
+    return calculatePackageTiming(distance, maxSpeed, currentTime);
 };
 
 const calculatePackageTiming = (distance, maxSpeed, currentTime) => {
@@ -32,30 +66,9 @@ const calculatePackageTiming = (distance, maxSpeed, currentTime) => {
     };
 };
 
-// Package factory function
-const Package = (id, weight, distance, offerCode) =>
-    createPackage(id, weight, distance, offerCode, (maxSpeed, currentTime) => {
-        return calculatePackageTiming(distance, maxSpeed, currentTime);
-    });
-
-// ProcessedPackage factory function that inherits from Package
-const ProcessedPackage = (
-    id,
-    weight,
-    distance,
-    offerCode,
-    deliveryDuration,
-    departureTime,
-    arrivalTime
-) => ({
-    id,
-    weight,
-    distance,
-    offerCode,
-    deliveryDuration,
-    departureTime,
-    arrivalTime,
-});
+const truncateDecimalToTwoPlaces = (numberToTruncate) => {
+    return Math.trunc(numberToTruncate * 100) / 100;
+};
 
 const generatePackages = (packageAmount, packageDetails) => {
     return Array.from({ length: packageAmount }, (_, i) => {
@@ -71,13 +84,21 @@ const generateSinglePackage = (
     const id = getId(packageDetails);
     const weight = getWeight(packageDetails);
     const distance = getDistance(packageDetails);
-    const offerCodes = getOfferCodes(
+
+    const submittedOfferCodes = getSubmittedOfferCodes(
         packageDetails,
         currentPackageIndex,
         packageAmount
     );
-    const eligibleOfferCode = offerService.getEligibleOfferCode(offerCodes);
-    return Package(id, weight, distance, eligibleOfferCode);
+    const eligibleOfferCode =
+        offerService.getEligibleOfferCode(submittedOfferCodes);
+    return Package(
+        id,
+        weight,
+        distance,
+        eligibleOfferCode,
+        submittedOfferCodes
+    );
 };
 
 const getId = (packageDetails) => {
@@ -86,31 +107,49 @@ const getId = (packageDetails) => {
 
 const getWeight = (packageDetails) => {
     const weightInput = packageDetails.shift();
-    return inputValidator.validateNumericInput("weight", weightInput);
+    return inputValidator.validateFloatInput("weight", weightInput);
 };
 
 const getDistance = (packageDetails) => {
     const distanceInput = packageDetails.shift();
-    return inputValidator.validateNumericInput("distance", distanceInput);
+    return inputValidator.validateFloatInput("distance", distanceInput);
 };
 
 const calculateStringInputAmount = (packageDetails) => {
     let stringInputAmount = 0;
-    let foundNumberIndex = packageDetails.findIndex((detail) =>
+    const foundNumberIndex = packageDetails.findIndex((detail) =>
         inputValidator.isNumber(parseFloat(detail))
     );
 
-    if (foundNumberIndex === -1) {
-        stringInputAmount = packageDetails.length;
-    } else {
-        stringInputAmount = foundNumberIndex;
-    }
+    stringInputAmount =
+        foundNumberIndex === -1 ? packageDetails.length : foundNumberIndex;
 
     return { stringInputAmount };
 };
 
-// Sort packages sequence so it follows the originalPackages
-const sortPackages = (packages, originalPackages) => {
+const sortPackagesByWeightThenDistance = (packages) => {
+    return packages.sort((a, b) => {
+        // Compare weights
+        if (a.weight < b.weight) {
+            return -1;
+        } else if (a.weight > b.weight) {
+            return 1;
+        }
+
+        // If weights are equal, compare distances
+        if (a.distance < b.distance) {
+            return -1;
+        } else if (a.distance > b.distance) {
+            return 1;
+        }
+
+        // If both weights and distances are equal, keep the same order
+        return 0;
+    });
+};
+
+// Reorder packages so it follows the originalPackages' id
+const reorderBasedOnId = (packages, originalPackages) => {
     return originalPackages.sort((a, b) => {
         const indexA = packages.findIndex((obj) => obj.id === a.id);
         const indexB = packages.findIndex((obj) => obj.id === b.id);
@@ -127,7 +166,11 @@ const filterOutPackages = (allPackages, packagesToRemove) =>
     );
 
 // Users might submit 0, 1 or more than 1 offer codes
-const getOfferCodes = (packageDetails, currentPackageIndex, packageAmount) => {
+const getSubmittedOfferCodes = (
+    packageDetails,
+    currentPackageIndex,
+    packageAmount
+) => {
     const isLastPackageInList = currentPackageIndex === packageAmount - 1;
     const offerCodes = [];
 
@@ -151,14 +194,16 @@ const getOfferCodes = (packageDetails, currentPackageIndex, packageAmount) => {
 const packageService = {
     generateSinglePackage,
     generatePackages,
-    sortPackages,
+    reorderBasedOnId,
     filterOutPackages,
+    sortPackagesByWeightThenDistance,
+    calculatePackageTiming,
+    calculateDeliverySchedule,
 };
 
 module.exports = {
     Package,
     ProcessedPackage,
-    createPackage,
     truncateDecimalToTwoPlaces,
     packageService,
 };

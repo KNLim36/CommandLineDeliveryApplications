@@ -29,6 +29,8 @@ const getHighestWeight = (itemA, itemB) => {
     return itemA.totalWeight > itemB.totalWeight ? itemA : itemB;
 };
 
+// Based on all currently available packages, we plan out a
+// distance and weight optimized shipment
 const createOptimalShipment = (
     packages,
     maxCarryWeight,
@@ -40,13 +42,17 @@ const createOptimalShipment = (
     for (let i = 0; i < packages.length; i++) {
         const shipment = [];
         const package = packages[i];
-
         let totalWeight = 0;
 
         if (package.weight <= maxCarryWeight) {
-            const { id, weight, distance, offerCode } = package;
+            const { id, weight, distance, offerCode, submittedOfferCodes } =
+                package;
             const { deliveryDuration, departureTime, arrivalTime } =
-                package.computeDeliverySchedule(maxSpeed, currentTime);
+                package.computeDeliverySchedule(
+                    distance,
+                    maxSpeed,
+                    currentTime
+                );
 
             shipment.push(
                 ProcessedPackage(
@@ -54,6 +60,7 @@ const createOptimalShipment = (
                     weight,
                     distance,
                     offerCode,
+                    submittedOfferCodes,
                     deliveryDuration,
                     departureTime,
                     arrivalTime
@@ -62,19 +69,26 @@ const createOptimalShipment = (
             totalWeight += package.weight;
         }
 
-        for (let j = i + 1; j < packages.length; j++) {
+        for (let j = 0; j < packages.length; j++) {
+            if (i === j) continue;
             const sibling = packages[j];
-            const { id, weight, distance, offerCode } = sibling;
+            const { id, weight, distance, offerCode, submittedOfferCodes } =
+                sibling;
 
             if (sibling.weight + totalWeight <= maxCarryWeight) {
                 const { deliveryDuration, departureTime, arrivalTime } =
-                    sibling.computeDeliverySchedule(maxSpeed, currentTime);
+                    sibling.computeDeliverySchedule(
+                        distance,
+                        maxSpeed,
+                        currentTime
+                    );
                 shipment.push(
                     ProcessedPackage(
                         id,
                         weight,
                         distance,
                         offerCode,
+                        submittedOfferCodes,
                         deliveryDuration,
                         departureTime,
                         arrivalTime
@@ -99,8 +113,7 @@ const createOptimalShipment = (
         shipmentDeliveryDuration
     );
     const driverAvailableTime = truncateDecimalToTwoPlaces(
-        truncateDecimalToTwoPlaces(currentTime) +
-            truncateDecimalToTwoPlaces(driverReturnDuration)
+        currentTime + driverReturnDuration
     );
 
     return {
@@ -147,6 +160,9 @@ const shipmentService = {
     getQuickestShipments,
     calculateReturningVehicleAmount,
     calculateMinReturnTime,
+    findHeaviestShipment,
+    getHighestAmount,
+    getHighestWeight,
 };
 
 module.exports = {
