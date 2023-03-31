@@ -69,6 +69,132 @@ describe("Delivery", () => {
         });
     });
 
+    describe("outputPackage", () => {
+        it("should output correct messages for delivered packages", () => {
+            const delivery = deliveryService.createDelivery();
+            const packages = [
+                Package("PKG1", 5, 55, "", ["OFR001"]),
+                Package("PKG2", 15, 105.5, "", ["OFR002"]),
+                Package("PKG3", 10, 100.07, "OFR003", ["OFR003"]),
+            ];
+            const outputResult = [
+                "PKG1 0 445 0.78",
+                "PKG2 0 797.5 1.5",
+                "PKG3 36 684.35 1.42",
+            ];
+
+            delivery.setPackages(packages);
+            delivery.setBaseDeliveryCost(120);
+            delivery.setVehicleAmount(1);
+            delivery.setVehicleMaxSpeed(70);
+            delivery.setVehicleMaxCarryWeight(200);
+            delivery.computeDeliveredPackages();
+            assert.deepStrictEqual(delivery.outputPackage(true), outputResult);
+        });
+
+        it("should output correct messages for delivered packages (example from feedback)", () => {
+            const delivery = deliveryService.createDelivery();
+            const packages = [
+                Package("PKG1", 50, 100, "", ["OFR002"]),
+                Package("PKG2", 50, 100, "", ["OFR001"]),
+                Package("PKG3", 150, 100, "OFR003", ["OFR003"]),
+                Package("PKG4", 99, 100, "OFR001", ["OFR001"]),
+                Package("PKG5", 100, 100, "OFR001", ["OFR001"]),
+            ];
+            const outputResult = [
+                "PKG1 0 1100 1.42",
+                "PKG2 0 1100 1.42",
+                "PKG3 105 1995 4.26",
+                "PKG4 159 1431 7.1",
+                "PKG5 160 1440 1.42",
+            ];
+
+            delivery.setPackages(packages);
+            delivery.setBaseDeliveryCost(100);
+            delivery.setVehicleAmount(1);
+            delivery.setVehicleMaxSpeed(70);
+            delivery.setVehicleMaxCarryWeight(200);
+            delivery.computeDeliveredPackages();
+            assert.deepStrictEqual(delivery.outputPackage(true), outputResult);
+        });
+
+        it("should output correct messages for undelivered packages", () => {
+            const delivery = deliveryService.createDelivery();
+            const packages = [
+                Package("PKG1", 5, 55, "", ["OFR001"]),
+                Package("PKG2", 15, 105.5, "", ["OFR002"]),
+                Package("PKG3", 10, 100.07, "OFR003", ["OFR003"]),
+            ];
+            const outputResult = [
+                "PKG1 0 445",
+                "PKG2 0 797.5",
+                "PKG3 36 684.35",
+            ];
+
+            delivery.setPackages(packages);
+            delivery.setBaseDeliveryCost(120);
+            assert.deepStrictEqual(delivery.outputPackage(true), outputResult);
+        });
+
+        it("should output correct messages for undelivered packages (example provided in requirement)", () => {
+            const delivery = deliveryService.createDelivery();
+            const packages = [
+                Package("PKG1", 5, 5, "", ["OFR001"]),
+                Package("PKG2", 15, 5, "", ["OFR002"]),
+                Package("PKG3", 10, 100, "OFR003", ["OFR003"]),
+            ];
+            const outputResult = ["PKG1 0 175", "PKG2 0 275", "PKG3 35 665"];
+
+            delivery.setPackages(packages);
+            delivery.setBaseDeliveryCost(100);
+            assert.deepStrictEqual(delivery.outputPackage(true), outputResult);
+        });
+    });
+
+    describe("getDeliveredPackages", () => {
+        it("should compute correct delivered packages", () => {
+            const delivery = deliveryService.createDelivery();
+            const packages = [
+                Package("PKG1", 5, 10, "", ["OFR001"]),
+                Package("PKG2", 8, 20, "", ["OFR001"]),
+            ];
+            const deliveredPackages = [
+                {
+                    arrivalTime: 1,
+                    deliveryDuration: 0.2,
+                    departureTime: 0.8,
+                    distance: 10,
+                    id: "PKG1",
+                    offerCode: "",
+                    submittedOfferCodes: ["OFR001"],
+                    weight: 5,
+                },
+                {
+                    arrivalTime: 0.4,
+                    deliveryDuration: 0.4,
+                    departureTime: 0,
+                    distance: 20,
+                    id: "PKG2",
+                    offerCode: "",
+                    submittedOfferCodes: ["OFR001"],
+                    weight: 8,
+                },
+            ];
+
+            delivery.setPackages(packages);
+            delivery.setBaseDeliveryCost(100);
+            delivery.setVehicleAmount(1);
+            delivery.setVehicleMaxSpeed(50);
+            delivery.setVehicleMaxCarryWeight(10);
+            delivery.computeDeliveredPackages();
+            assert.deepStrictEqual(delivery.getPackages(), packages);
+            assert.deepStrictEqual(
+                delivery.getDeliveredPackages(),
+                deliveredPackages
+            );
+        });
+    });
+
     describe("getter and setter", () => {
         it("should set and get the base delivery cost", () => {
             const delivery = deliveryService.createDelivery();
@@ -115,74 +241,6 @@ describe("Delivery", () => {
             ];
             delivery.setPackages(packages);
             assert.deepStrictEqual(delivery.getPackages(), packages);
-        });
-    });
-
-    describe("outputPackage", () => {
-        it("should output correct messages for delivered packages", () => {
-            const delivery = deliveryService.createDelivery();
-            const packages = [
-                Package("PKG1", 5, 55, "", ["OFR001"]),
-                Package("PKG2", 15, 105.5, "", ["OFR002"]),
-                Package("PKG3", 10, 100.07, "OFR003", ["OFR003"]),
-            ];
-            const outputResult = [
-                "PKG1 0 445 0.78",
-                "PKG2 0 797.5 1.5",
-                "PKG3 36 684.35 1.42",
-            ];
-
-            delivery.setPackages(packages);
-            delivery.setBaseDeliveryCost(120);
-            delivery.setVehicleAmount(1);
-            delivery.setVehicleMaxSpeed(70);
-            delivery.setVehicleMaxCarryWeight(200);
-            delivery.computeDeliveredPackages();
-            assert.deepStrictEqual(delivery.outputPackage(true), outputResult);
-        });
-    });
-
-    describe("getDeliveredPackages", () => {
-        it("should compute correct delivered packages", () => {
-            const delivery = deliveryService.createDelivery();
-            const packages = [
-                Package("PKG1", 5, 10, "", ["OFR001"]),
-                Package("PKG2", 8, 20, "", ["OFR001"]),
-            ];
-            const deliveredPackages = [
-                {
-                    arrivalTime: 1,
-                    deliveryDuration: 0.2,
-                    departureTime: 0.8,
-                    distance: 10,
-                    id: "PKG1",
-                    offerCode: "",
-                    submittedOfferCodes: ["OFR001"],
-                    weight: 5,
-                },
-                {
-                    arrivalTime: 0.4,
-                    deliveryDuration: 0.4,
-                    departureTime: 0,
-                    distance: 20,
-                    id: "PKG2",
-                    offerCode: "",
-                    submittedOfferCodes: ["OFR001"],
-                    weight: 8,
-                },
-            ];
-
-            delivery.setPackages(packages);
-            delivery.setBaseDeliveryCost(100);
-            delivery.setVehicleAmount(1);
-            delivery.setVehicleMaxSpeed(50);
-            delivery.setVehicleMaxCarryWeight(10);
-            delivery.computeDeliveredPackages();
-            assert.deepStrictEqual(delivery.getPackages(), packages);
-            assert.deepStrictEqual(
-                delivery.getDeliveredPackages(),
-                deliveredPackages
-            );
         });
     });
 });
