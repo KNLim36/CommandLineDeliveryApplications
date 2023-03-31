@@ -65,6 +65,18 @@ const createDelivery = () => {
         vehicleMaxCarryWeight = newWeight;
     };
 
+    delivery.validateWeightWithPackages = (weight) => {
+        return packages.every((package) => package.weight <= weight);
+    };
+
+    delivery.getHeaviestPackageWeight = () => {
+        return packages.reduce((maxWeight, currentPackage) => {
+            return currentPackage.weight > maxWeight
+                ? currentPackage.weight
+                : maxWeight;
+        }, 0);
+    };
+
     delivery.getPackages = () => {
         return packages;
     };
